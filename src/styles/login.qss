@@ -1,0 +1,53 @@
+/* === Labels === */
+QLabel#userLabel, QLabel#passLabel {
+    color: #FFD700;
+    font-family: Arial;
+    font-size: 24px;
+    font-weight: bold;
+}
+
+/* === Input Fields === */
+QLineEdit {
+    background: white;
+    border-radius: 20px;
+    padding-left: 15px;
+    font-size: 18px;
+    color: black;
+    border: none;
+}
+
+QLineEdit:focus {
+    border: 2px solid #FFD700;
+}
+
+/* === Buttons === */
+QPushButton {
+    color: #FFD700;
+    border: 1px solid #FFD700;
+    font-size: 16px;
+    padding: 8px;
+    border-radius: 5px;
+    background-color: rgba(0, 0, 0, 0);
+}
+
+QPushButton:hover {
+    background-color: #FFD700;
+    color: black;
+}
+
+QPushButton:pressed {
+    background-color: #DAA520;
+}
+
+/* === Specific Button Styles === */
+QPushButton#loginBtn {
+    font-weight: bold;
+}
+
+QPushButton#signupBtn {
+    font-weight: bold;
+}
+
+QPushButton#forgetBtn {
+    font-size: 14px;
+}
