@@ -4,14 +4,14 @@ from PyQt6.QtCore import Qt, QPropertyAnimation, QPoint, QEasingCurve, QTimer
 import sys
 
 
-class LoginPage(QMainWindow):
+class SignupPage(QMainWindow):
     def __init__(self):
         super().__init__()
-        self.setWindowTitle("Beyond Panels")
+        self.setWindowTitle("Beyond Panels - Sign Up")
         self.showMaximized()
 
-        # โหลด stylesheet จากไฟล์
-        self.load_stylesheet("src/styles/login.qss")
+        # โหลด stylesheet
+        self.load_stylesheet("src/styles/signup.qss")
 
         # === ตั้งค่าภาพพื้นหลัง ===
         self.bg_label = QLabel(self)
@@ -20,50 +20,73 @@ class LoginPage(QMainWindow):
         self.bg_label.setScaledContents(True)
         self.setCentralWidget(self.bg_label)
         
+        # === Title ===
+        self.title_label = QLabel("Create Account", self.bg_label)
+        self.title_label.setObjectName("titleLabel")
+        self.title_label.setGeometry(550, 120, 400, 50)
+        
         # === Label Username ===
         self.user_label = QLabel("Username", self.bg_label)
         self.user_label.setObjectName("userLabel")
         self.user_label.setGeometry(550, 200, 300, 40)
         
-        # === Username Textbox ===
+        # === Username Input ===
         self.username = QLineEdit(self.bg_label)
         self.username.setPlaceholderText("Enter Username")
         self.username.setGeometry(550, 250, 400, 50)
 
+        # === Label Email ===
+        self.email_label = QLabel("Email", self.bg_label)
+        self.email_label.setObjectName("emailLabel")
+        self.email_label.setGeometry(550, 320, 300, 40)
+        
+        # === Email Input ===
+        self.email = QLineEdit(self.bg_label)
+        self.email.setPlaceholderText("Enter Email")
+        self.email.setGeometry(550, 370, 400, 50)
+
         # === Label Password ===
         self.pass_label = QLabel("Password", self.bg_label)
         self.pass_label.setObjectName("passLabel")
-        self.pass_label.setGeometry(550, 320, 300, 40)
+        self.pass_label.setGeometry(550, 440, 300, 40)
 
-        # === Password Textbox ===
+        # === Password Input ===
         self.password = QLineEdit(self.bg_label)
         self.password.setPlaceholderText("Enter Password")
         self.password.setEchoMode(QLineEdit.EchoMode.Password)
-        self.password.setGeometry(550, 370, 400, 50)
+        self.password.setGeometry(550, 490, 400, 50)
 
-        # === ปุ่ม Login ===
-        self.login_btn = QPushButton("LOGIN", self.bg_label)
-        self.login_btn.setObjectName("loginBtn")
-        self.login_btn.setGeometry(550, 480, 180, 50)
-        self.login_btn.clicked.connect(self.login_clicked)
+        # === Label Confirm Password ===
+        self.confirm_label = QLabel("Confirm Password", self.bg_label)
+        self.confirm_label.setObjectName("confirmLabel")
+        self.confirm_label.setGeometry(550, 560, 300, 40)
 
-        # === ปุ่ม Signup ===
-        self.signup_btn = QPushButton("SIGNUP", self.bg_label)
+        # === Confirm Password Input ===
+        self.confirm_password = QLineEdit(self.bg_label)
+        self.confirm_password.setPlaceholderText("Confirm Password")
+        self.confirm_password.setEchoMode(QLineEdit.EchoMode.Password)
+        self.confirm_password.setGeometry(550, 610, 400, 50)
+
+        # === ปุ่ม Sign Up ===
+        self.signup_btn = QPushButton("SIGN UP", self.bg_label)
         self.signup_btn.setObjectName("signupBtn")
-        self.signup_btn.setGeometry(770, 480, 180, 50)
+        self.signup_btn.setGeometry(550, 690, 180, 50)
         self.signup_btn.clicked.connect(self.signup_clicked)
 
-        # === ปุ่ม Forget Password ===
-        self.forget_btn = QPushButton("FORGET PASSWORD?", self.bg_label)
-        self.forget_btn.setObjectName("forgetBtn")
-        self.forget_btn.setGeometry(630, 560, 260, 50)
-        self.forget_btn.clicked.connect(self.forget_clicked)
+        # === ปุ่ม Back to Login ===
+        self.back_btn = QPushButton("BACK TO LOGIN", self.bg_label)
+        self.back_btn.setObjectName("backBtn")
+        self.back_btn.setGeometry(770, 690, 180, 50)
+        self.back_btn.clicked.connect(self.back_clicked)
 
         # === เรียก animation ===
         self.animate_widgets([
+            self.title_label,
             self.user_label, self.username,
+            self.email_label, self.email,
             self.pass_label, self.password,
-            self.login_btn, self.signup_btn, self.forget_btn
+            self.confirm_label, self.confirm_password,
+            self.signup_btn, self.back_btn
         ])
     
     def load_stylesheet(self, filepath):
@@ -104,35 +127,37 @@ class LoginPage(QMainWindow):
                 fade_anim.start()
                 slide_anim.start()
 
-            QTimer.singleShot(i * 150, start_animation)
+            QTimer.singleShot(i * 100, start_animation)
 
-    def login_clicked(self):
-        """ฟังก์ชันเมื่อกด Login"""
+    def signup_clicked(self):
+        """ฟังก์ชันเมื่อกด Sign Up"""
         username = self.username.text()
+        email = self.email.text()
         password = self.password.text()
+        confirm = self.confirm_password.text()
         
-        if not username or not password:
+        # ตรวจสอบข้อมูล
+        if not username or not email or not password:
             print("Error: Please fill all fields")
             return
             
-        print("Login clicked:", username, password)
-        # TODO: ตรวจสอบกับ database
+        if password != confirm:
+            print("Error: Passwords do not match")
+            return
+        
+        print(f"Sign Up - Username: {username}, Email: {email}")
+        # TODO: เชื่อมต่อกับ database
 
-    def signup_clicked(self):
-        """เปิดหน้า Signup"""
-        from signup import SignupPage
-        self.signup_window = SignupPage()
-        self.signup_window.show()
+    def back_clicked(self):
+        """กลับไปหน้า Login"""
+        from login import LoginPage
+        self.login_window = LoginPage()
+        self.login_window.show()
         self.close()
-
-    def forget_clicked(self):
-        """เปิดหน้า Forget Password"""
-        print("Forget Password clicked")
-        # TODO: สร้างหน้า Forget Password
 
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
-    window = LoginPage()
+    window = SignupPage()
     window.show()
     sys.exit(app.exec())
