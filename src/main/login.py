@@ -127,8 +127,10 @@ class LoginPage(QMainWindow):
 
     def forget_clicked(self):
         """เปิดหน้า Forget Password"""
-        print("Forget Password clicked")
-        # TODO: สร้างหน้า Forget Password
+        from forget_password import ForgetPasswordPage
+        self.forget_window = ForgetPasswordPage()
+        self.forget_window.show()
+        self.close()
 
 
 if __name__ == "__main__":
