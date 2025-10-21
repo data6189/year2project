@@ -1,4 +1,7 @@
-from PyQt6.QtWidgets import QApplication, QMainWindow, QLineEdit, QPushButton, QLabel, QGraphicsOpacityEffect
+from PyQt6.QtWidgets import (
+    QApplication, QMainWindow, QLineEdit, QPushButton, QLabel,
+    QGraphicsOpacityEffect, QStackedWidget, QWidget
+)
 from PyQt6.QtGui import QPixmap, QFont
 from PyQt6.QtCore import Qt, QPropertyAnimation, QPoint, QEasingCurve, QTimer
 import sys
