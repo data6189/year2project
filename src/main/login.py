@@ -12,13 +12,9 @@ class LoginPage(QMainWindow):
         self.setWindowTitle("Beyond Panels")
         self.showMaximized()
 
-        # โหลด stylesheet จากไฟล์
-        self.load_stylesheet("src/styles/login.qss")
-
         # === ตั้งค่าภาพพื้นหลัง ===
         self.bg_label = QLabel(self)
-        pixmap = QPixmap("src/img/LoginSystem.jpg") 
-        self.bg_label.setPixmap(pixmap)
+        self.load_stylesheet("src/styles/login.qss") # โหลด stylesheet จากไฟล์
         self.bg_label.setScaledContents(True)
         self.setCentralWidget(self.bg_label)
         
