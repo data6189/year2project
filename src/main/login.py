@@ -3,7 +3,6 @@ from PyQt6.QtGui import QPixmap, QFont
 from PyQt6.QtCore import Qt, QPropertyAnimation, QPoint, QEasingCurve, QTimer
 import sys
 
-
 class LoginPage(QMainWindow):
     def __init__(self):
         super().__init__()
