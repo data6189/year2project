@@ -15,8 +15,6 @@ class ForgetPasswordPage(QMainWindow):
 
         # === ตั้งค่าภาพพื้นหลัง ===
         self.bg_label = QLabel(self)
-        pixmap = QPixmap("src/img/LoginSystem.jpg") 
-        self.bg_label.setPixmap(pixmap)
         self.bg_label.setScaledContents(True)
         self.setCentralWidget(self.bg_label)
         
@@ -199,9 +197,7 @@ class ForgetPasswordPage(QMainWindow):
     def back_clicked(self):
         """กลับไปหน้า Login"""
         from login import LoginPage
-        self.login_window = LoginPage()
-        self.login_window.show()
-        self.close()
+
 
 
 if __name__ == "__main__":

@@ -6,6 +6,16 @@ QLabel#userLabel, QLabel#passLabel {
     font-weight: bold;
 }
 
+/* === BG stack === */
+QWidget#loginPage {
+    border-image: url("src/img/LoginSystem.jpg") 0 0 0 0 stretch stretch;
+}
+
+/* === BG อันเดิม === */
+QMainWindow {
+    border-image: url("src/img/LoginSystem.jpg") 0 0 0 0 stretch stretch;
+}
+
 /* === Input Fields === */
 QLineEdit {
     background: white;
@@ -50,8 +60,4 @@ QPushButton#signupBtn {
 
 QPushButton#forgetBtn {
     font-size: 14px;
-}
-
-QMainWindow {
-    border-image: url("src/img/LoginSystem.jpg") 0 0 0 0 stretch stretch;
 }
