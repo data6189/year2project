@@ -21,7 +21,7 @@ class SignupPage(QMainWindow):
         # === Title ===
         self.title_label = QLabel("Create Account", self.bg_label)
         self.title_label.setObjectName("titleLabel")
-        self.title_label.setGeometry(550, 120, 400, 50)
+        self.title_label.setGeometry(550, 150, 400, 50)
         
         # === Label Username ===
         self.user_label = QLabel("Username", self.bg_label)

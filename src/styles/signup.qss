@@ -65,5 +65,5 @@ QPushButton#backBtn {
 }
 
 QMainWindow {
-    border-image: url("src/img/LoginSystem.jpg") 0 0 0 0 stretch stretch;
+    border-image: url("src/img/darktheme/Signup.png") 0 0 0 0 stretch stretch;
 }

@@ -1,6 +1,7 @@
 import sys
 from PyQt6.QtWidgets import *
 from PyQt6.QtCore import *
+from PyQt6.QtGui import *
 
 # === Import Pages ===
 
@@ -139,7 +140,7 @@ class LoginPage(QFrame): # <-- แก้ไขบรรทัดนี้
 class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
-        self.setWindowTitle("Beyond Panels")
+        self.setWindowTitle("Beyond Comics")
         self.showMaximized()
         
         self.stack = QStackedWidget()

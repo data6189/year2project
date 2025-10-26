@@ -8,7 +8,7 @@ QLabel#userLabel, QLabel#passLabel {
 
 /* === BG stack === */
 QWidget#loginPage {
-    border-image: url("src/img/LoginSystem.jpg") 0 0 0 0 stretch stretch;
+    border-image: url("src/img/darktheme/LoginFunny.png") 0 0 0 0 stretch stretch;
 }
 
 /* === BG อันเดิม === */
