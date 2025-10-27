@@ -1,13 +1,12 @@
-from PyQt6.QtWidgets import QApplication, QMainWindow, QLineEdit, QPushButton, QLabel, QGraphicsOpacityEffect
-from PyQt6.QtGui import QPixmap, QFont
-from PyQt6.QtCore import Qt, QPropertyAnimation, QPoint, QEasingCurve, QTimer
+from PyQt6.QtWidgets import *
+from PyQt6.QtGui import *
+from PyQt6.QtCore import *
 import sys
 
 
 class SignupPage(QMainWindow):
     def __init__(self):
         super().__init__()
-        self.setWindowTitle("Beyond Panels")
         self.showMaximized()
 
         # โหลด stylesheet

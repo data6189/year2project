@@ -7,7 +7,6 @@ import sys
 class ForgetPasswordPage(QMainWindow):
     def __init__(self):
         super().__init__()
-        self.setWindowTitle("Beyond Panels - Forget Password")
         self.showMaximized()
 
         # โหลด stylesheet

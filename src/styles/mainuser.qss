@@ -1,0 +1,81 @@
+QMainWindow {
+    border-image: url("src/img/user/userbg.png") 0 0 0 0 stretch stretch;
+}
+
+/* === Header (แถบด้านบน) === */
+#Header {
+    border-bottom: 1px solid #FFD700;
+}
+
+/* === ปุ่ม Nav ด้านบน (ที่คุณให้มา) === */
+QPushButton#navButton {
+    color: #FFD700;
+    border: 1px solid #FFD700;
+    font-size: 16px;
+    padding: 8px;
+    border-radius: 5px;
+    background-color: rgba(0, 0, 0, 0);
+    font-weight: bold;
+}
+
+QPushButton#navButton:hover {
+    background-color: #FFD700;
+    color: black;
+}
+
+QPushButton#navButton:pressed {
+    background-color: #DAA520;
+}
+
+/* === Sidebar (แถบด้านซ้าย) === */
+#Sidebar {
+    max-width: 200px; /* จำกัดความกว้าง */
+}
+
+/* === ปุ่ม Sidebar (สไตล์สีดำตามที่ขอ) === */
+QPushButton#sidebarButton {
+    color: white;
+    border: 1px solid #222;
+    font-size: 16px;
+    padding: 10px;
+    border-radius: 5px;
+    background-color: #333333; /* สีดำ/เทาเข้ม */
+    text-align: left; /* จัดข้อความชิดซ้าย */
+    padding-left: 20px;
+}
+
+QPushButton#sidebarButton:hover {
+    background-color: #555555; /* สว่างขึ้นเมื่อชี้ */
+}
+
+QPushButton#sidebarButton:pressed {
+    background-color: #111111; /* เข้มขึ้นเมื่อกด */
+}
+
+/* === ส่วนแสดงผลหลัก (Content) === */
+MainContent {
+    background-color: rgba(255, 255, 255, 0.5); /* พื้นหลังสีขาว โปร่งแสงเล็กน้อย */    
+    border-radius: 1px;
+}
+
+QPushButton#searchButton:hover {
+    background-color: #555555; /* สว่างขึ้นเมื่อชี้ */
+}
+
+/* === Scroll Area (ที่ทำหน้าที่เหมือน iframe) === */
+QScrollArea {
+    border: none; /* ไม่มีขอบ */
+    background-color: transparent; /* พื้นหลังโปร่งใส */
+}
+
+#scrollContent {
+    background-color: transparent; /* พื้นหลังโปร่งใส */
+}
+
+/* === ป้าย "Browse Comics" === */
+#browseLabel {
+    font-size: 24px;
+    font-weight: bold;
+    color: #333;
+    padding: 10px;
+}

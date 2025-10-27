@@ -4,50 +4,18 @@ from PyQt6.QtCore import *
 from PyQt6.QtGui import *
 
 # === Import Pages ===
-
 # 1. Import ForgetPasswordPage
-# (เรายังคงใช้ mock class นี้เผื่อไฟล์จริงยังไม่มี หรือคุณยังไม่ได้สร้าง)
 try:
     from forget_password import ForgetPasswordPage
 except ImportError:
     print("Warning: 'forget_password.py' not found. Using mock class.")
     
-    class ForgetPasswordPage(QWidget):
-        def __init__(self, parent=None):
-            super().__init__(parent)
-            self.load_stylesheet("src/styles/forget_password.qss") # โหลด QSS ของตัวเอง
-            
-            self.label = QLabel("นี่คือหน้าลืมรหัสผ่าน (จำลอง)", self)
-            self.label.setGeometry(550, 200, 400, 50)
-            self.back_btn = QPushButton("BACK TO LOGIN", self)
-            self.back_btn.setGeometry(550, 300, 180, 50)
-
-        def load_stylesheet(self, filepath):
-            """โหลด QSS stylesheet จากไฟล์"""
-            try:
-                with open(filepath, 'r', encoding='utf-8') as f:
-                    self.setStyleSheet(f.read())
-            except FileNotFoundError:
-                print(f"Warning: Stylesheet file '{filepath}' not found")
-
 # 2. Import SignupPage (แก้ไขตามคำขอ)
-# เราจะลบ mock class ออก และใช้ import จริงจาก path ของคุณ
 try:
-    # นี่คือส่วนที่แก้ไข
-    # โปรแกรมจะพยายาม import คลาส SignupPage จากไฟล์ signup.py
     from signup import SignupPage 
     print("Successfully imported SignupPage from signup.py")
 except ImportError:
     print("Error: 'signup.py' not found or SignupPage class not found.")
-    print("Please ensure the file 'signup.py' exists and contains 'class SignupPage(QWidget)'.")
-    # สร้างคลาสจำลองฉุกเฉินเพื่อให้โปรแกรมรันต่อได้ (แต่จะ báo error)
-    class SignupPage(QWidget):
-        def __init__(self, parent=None):
-            super().__init__(parent)
-            self.label = QLabel("ERROR: Could not load signup.py", self)
-            self.label.setGeometry(550, 200, 400, 50)
-            self.back_btn = QPushButton("BACK TO LOGIN", self)
-            self.back_btn.setGeometry(550, 300, 180, 50)
 
 # === หน้า Login (เหมือนเดิม) ===
 class LoginPage(QFrame): # <-- แก้ไขบรรทัดนี้
