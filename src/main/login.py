@@ -1,69 +1,99 @@
-from PyQt6.QtWidgets import (
-    QApplication, QMainWindow, QLineEdit, QPushButton, QLabel,
-    QGraphicsOpacityEffect, QStackedWidget, QWidget
-)
-from PyQt6.QtGui import QPixmap, QFont
-from PyQt6.QtCore import Qt, QPropertyAnimation, QPoint, QEasingCurve, QTimer
 import sys
+from PyQt6.QtWidgets import *
+from PyQt6.QtCore import *
+from PyQt6.QtGui import *
 
-class LoginPage(QMainWindow):
-    def __init__(self):
-        super().__init__()
-        self.setWindowTitle("Beyond Panels")
-        self.showMaximized()
+# === Import Pages ===
 
-        # === ตั้งค่าภาพพื้นหลัง ===
-        self.bg_label = QLabel(self)
-        self.load_stylesheet("src/styles/login.qss") # โหลด stylesheet จากไฟล์
-        self.bg_label.setScaledContents(True)
-        self.setCentralWidget(self.bg_label)
+# 1. Import ForgetPasswordPage
+# (เรายังคงใช้ mock class นี้เผื่อไฟล์จริงยังไม่มี หรือคุณยังไม่ได้สร้าง)
+try:
+    from forget_password import ForgetPasswordPage
+except ImportError:
+    print("Warning: 'forget_password.py' not found. Using mock class.")
+    
+    class ForgetPasswordPage(QWidget):
+        def __init__(self, parent=None):
+            super().__init__(parent)
+            self.load_stylesheet("src/styles/forget_password.qss") # โหลด QSS ของตัวเอง
+            
+            self.label = QLabel("นี่คือหน้าลืมรหัสผ่าน (จำลอง)", self)
+            self.label.setGeometry(550, 200, 400, 50)
+            self.back_btn = QPushButton("BACK TO LOGIN", self)
+            self.back_btn.setGeometry(550, 300, 180, 50)
+
+        def load_stylesheet(self, filepath):
+            """โหลด QSS stylesheet จากไฟล์"""
+            try:
+                with open(filepath, 'r', encoding='utf-8') as f:
+                    self.setStyleSheet(f.read())
+            except FileNotFoundError:
+                print(f"Warning: Stylesheet file '{filepath}' not found")
+
+# 2. Import SignupPage (แก้ไขตามคำขอ)
+# เราจะลบ mock class ออก และใช้ import จริงจาก path ของคุณ
+try:
+    # นี่คือส่วนที่แก้ไข
+    # โปรแกรมจะพยายาม import คลาส SignupPage จากไฟล์ signup.py
+    from signup import SignupPage 
+    print("Successfully imported SignupPage from signup.py")
+except ImportError:
+    print("Error: 'signup.py' not found or SignupPage class not found.")
+    print("Please ensure the file 'signup.py' exists and contains 'class SignupPage(QWidget)'.")
+    # สร้างคลาสจำลองฉุกเฉินเพื่อให้โปรแกรมรันต่อได้ (แต่จะ báo error)
+    class SignupPage(QWidget):
+        def __init__(self, parent=None):
+            super().__init__(parent)
+            self.label = QLabel("ERROR: Could not load signup.py", self)
+            self.label.setGeometry(550, 200, 400, 50)
+            self.back_btn = QPushButton("BACK TO LOGIN", self)
+            self.back_btn.setGeometry(550, 300, 180, 50)
+
+# === หน้า Login (เหมือนเดิม) ===
+class LoginPage(QFrame): # <-- แก้ไขบรรทัดนี้
+    def __init__(self, parent=None):
+        super().__init__(parent)
         
-        # === Label Username ===
-        self.user_label = QLabel("Username", self.bg_label)
+        # === โหลด Stylesheet (เหมือนเดิม) ===
+        self.load_stylesheet("src/styles/login.qss")
+        self.setObjectName("loginPage")
+        
+        self.user_label = QLabel("Username", self)
         self.user_label.setObjectName("userLabel")
         self.user_label.setGeometry(550, 200, 300, 40)
-        
-        # === Username Textbox ===
-        self.username = QLineEdit(self.bg_label)
+
+        self.username = QLineEdit(self)
         self.username.setPlaceholderText("Enter Username")
         self.username.setGeometry(550, 250, 400, 50)
 
-        # === Label Password ===
-        self.pass_label = QLabel("Password", self.bg_label)
+        self.pass_label = QLabel("Password", self)
         self.pass_label.setObjectName("passLabel")
         self.pass_label.setGeometry(550, 320, 300, 40)
 
-        # === Password Textbox ===
-        self.password = QLineEdit(self.bg_label)
+        self.password = QLineEdit(self)
         self.password.setPlaceholderText("Enter Password")
         self.password.setEchoMode(QLineEdit.EchoMode.Password)
         self.password.setGeometry(550, 370, 400, 50)
 
-        # === ปุ่ม Login ===
-        self.login_btn = QPushButton("LOGIN", self.bg_label)
+        self.login_btn = QPushButton("LOGIN", self)
         self.login_btn.setObjectName("loginBtn")
         self.login_btn.setGeometry(550, 480, 180, 50)
-        self.login_btn.clicked.connect(self.login_clicked)
 
-        # === ปุ่ม Signup ===
-        self.signup_btn = QPushButton("SIGNUP", self.bg_label)
+        self.signup_btn = QPushButton("SIGNUP", self)
         self.signup_btn.setObjectName("signupBtn")
         self.signup_btn.setGeometry(770, 480, 180, 50)
-        self.signup_btn.clicked.connect(self.signup_clicked)
 
-        # === ปุ่ม Forget Password ===
-        self.forget_btn = QPushButton("FORGET PASSWORD?", self.bg_label)
+        self.forget_btn = QPushButton("FORGET PASSWORD?", self)
         self.forget_btn.setObjectName("forgetBtn")
         self.forget_btn.setGeometry(630, 560, 260, 50)
-        self.forget_btn.clicked.connect(self.forget_clicked)
 
-        # === เรียก animation ===
         self.animate_widgets([
             self.user_label, self.username,
             self.pass_label, self.password,
-            self.login_btn, self.signup_btn, self.forget_btn
+            self.login_btn, self.signup_btn,
+            self.forget_btn
         ])
-    
+
     def load_stylesheet(self, filepath):
         """โหลด QSS stylesheet จากไฟล์"""
         try:
@@ -71,7 +101,8 @@ class LoginPage(QMainWindow):
                 self.setStyleSheet(f.read())
         except FileNotFoundError:
             print(f"Warning: Stylesheet file '{filepath}' not found")
-        
+    
+    
     def animate_widgets(self, widgets):
         """ทำ fade-in + slide-up ให้แต่ละ widget"""
         for i, widget in enumerate(widgets):
@@ -104,35 +135,95 @@ class LoginPage(QMainWindow):
 
             QTimer.singleShot(i * 150, start_animation)
 
-    def login_clicked(self):
-        """ฟังก์ชันเมื่อกด Login"""
-        username = self.username.text()
-        password = self.password.text()
+
+# === Main Window (เหมือนเดิม) ===
+class MainWindow(QMainWindow):
+    def __init__(self):
+        super().__init__()
+        self.setWindowTitle("Beyond Comics")
+        self.showMaximized()
         
-        if not username or not password:
-            print("Error: Please fill all fields")
-            return
-            
-        print("Login clicked:", username, password)
-        # TODO: ตรวจสอบกับ database
+        self.stack = QStackedWidget()
+        self.setCentralWidget(self.stack)
+        
+        # === สร้างและเพิ่มหน้า ===
+        self.login_page = LoginPage()
+        self.forget_page = ForgetPasswordPage()
+        self.signup_page = SignupPage() # <-- ตอนนี้จะใช้คลาสจริงจาก signup.py
 
-    def signup_clicked(self):
-        """เปิดหน้า Signup"""
-        from signup import SignupPage
-        self.signup_window = SignupPage()
-        self.signup_window.show()
-        self.close()
+        self.stack.addWidget(self.login_page)
+        self.stack.addWidget(self.forget_page)
+        self.stack.addWidget(self.signup_page) 
 
-    def forget_clicked(self):
-        """เปิดหน้า Forget Password"""
-        from forget_password import ForgetPasswordPage
-        self.forget_window = ForgetPasswordPage()
-        self.forget_window.show()
-        self.close()
+        # === เชื่อมปุ่ม ===
+        self.login_page.forget_btn.clicked.connect(self.slide_to_forget)
+        self.login_page.signup_btn.clicked.connect(self.slide_to_signup) 
 
+        # --- สำคัญ ---
+        # ตรวจสอบว่าคลาส SignupPage ของคุณมีปุ่มชื่อ 'back_btn' หรือไม่
+        # ถ้ามี โค้ดนี้จะเชื่อมต่อปุ่มนั้นให้
+        if hasattr(self.signup_page, "back_btn"):
+            self.signup_page.back_btn.clicked.connect(self.slide_to_login_from_signup)
+        else:
+            print("Warning: 'SignupPage' object from signup.py has no attribute 'back_btn'.")
+            print("         (ปุ่ม 'Back' จากหน้า Signup จะยังไม่ทำงาน)")
 
+        if hasattr(self.forget_page, "back_btn"):
+            self.forget_page.back_btn.clicked.connect(self.slide_to_login_from_forget)
+        else:
+             print("Warning: 'ForgetPasswordPage' object has no attribute 'back_btn'.")
+
+    # --- (เมธอด slide ทั้งหมดเหมือนเดิม) ---
+
+    def slide_to_forget(self):
+        self.animate_slide(self.login_page, self.forget_page, "right")
+
+    def slide_to_signup(self):
+        self.animate_slide(self.login_page, self.signup_page, "right")
+
+    def slide_to_login_from_forget(self):
+        self.animate_slide(self.forget_page, self.login_page, "left")
+
+    def slide_to_login_from_signup(self):
+        self.animate_slide(self.signup_page, self.login_page, "left")
+
+    def animate_slide(self, current_widget, next_widget, direction="right"):
+        """ทำแอนิเมชันเลื่อนหน้า"""
+        current_index = self.stack.indexOf(current_widget)
+        next_index = self.stack.indexOf(next_widget)
+
+        if current_index == next_index:
+            return 
+
+        offset_x = self.stack.frameRect().width()
+        if direction == "left":
+            offset_x = -offset_x
+
+        next_widget.setGeometry(offset_x, 0, self.stack.width(), self.stack.height())
+        self.stack.setCurrentWidget(next_widget)
+
+        anim_old = QPropertyAnimation(current_widget, b"pos")
+        anim_new = QPropertyAnimation(next_widget, b"pos")
+
+        for anim in (anim_old, anim_new):
+            anim.setDuration(600)
+            anim.setEasingCurve(QEasingCurve.Type.InOutCubic)
+
+        anim_old.setStartValue(current_widget.pos())
+        anim_old.setEndValue(QPoint(-offset_x, 0))
+
+        anim_new.setStartValue(QPoint(offset_x, 0))
+        anim_new.setEndValue(QPoint(0, 0))
+
+        self.anim_old = anim_old
+        self.anim_new = anim_new
+        
+        anim_old.start()
+        anim_new.start()
+        
 if __name__ == "__main__":
     app = QApplication(sys.argv)
-    window = LoginPage()
+    window = MainWindow()
     window.show()
     sys.exit(app.exec())
+

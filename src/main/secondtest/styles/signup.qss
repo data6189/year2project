@@ -1,14 +1,20 @@
-/* === Labels === */
-QLabel#userLabel, QLabel#passLabel {
+/* === Title === */
+QLabel#titleLabel {
     color: #FFD700;
     font-family: Arial;
-    font-size: 24px;
+    font-size: 32px;
     font-weight: bold;
 }
 
-/* === BG stack === */
-QWidget#loginPage {
-    border-image: url("src/img/darktheme/LoginFunny.png") 0 0 0 0 stretch stretch;
+/* === Labels === */
+QLabel#userLabel, 
+QLabel#emailLabel, 
+QLabel#passLabel, 
+QLabel#confirmLabel {
+    color: #FFD700;
+    font-family: Arial;
+    font-size: 20px;
+    font-weight: bold;
 }
 
 /* === Input Fields === */
@@ -25,11 +31,16 @@ QLineEdit:focus {
     border: 2px solid #FFD700;
 }
 
+QLineEdit:hover {
+    background: #f5f5f5;
+}
+
 /* === Buttons === */
 QPushButton {
     color: #FFD700;
     border: 1px solid #FFD700;
     font-size: 16px;
+    font-weight: bold;
     padding: 8px;
     border-radius: 5px;
     background-color: rgba(0, 0, 0, 0);
@@ -45,14 +56,14 @@ QPushButton:pressed {
 }
 
 /* === Specific Button Styles === */
-QPushButton#loginBtn {
-    font-weight: bold;
-}
-
 QPushButton#signupBtn {
-    font-weight: bold;
+    font-size: 18px;
 }
 
-QPushButton#forgetBtn {
+QPushButton#backBtn {
     font-size: 14px;
+}
+
+QMainWindow {
+    border-image: url("src/img/darktheme/Signup.png") 0 0 0 0 stretch stretch;
 }
