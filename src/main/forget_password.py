@@ -84,14 +84,6 @@ class ForgetPasswordPage(QMainWindow):
 
         # === Track state ===
         self.code_sent = False
-
-        # === เรียก animation ===
-        self.animate_widgets([
-            self.title_label,
-            self.desc_label,
-            self.email_label, self.email,
-            self.send_btn, self.back_btn
-        ])
     
     def load_stylesheet(self, filepath):
         """โหลด QSS stylesheet จากไฟล์"""
@@ -100,38 +92,6 @@ class ForgetPasswordPage(QMainWindow):
                 self.setStyleSheet(f.read())
         except FileNotFoundError:
             print(f"Warning: Stylesheet file '{filepath}' not found")
-        
-    def animate_widgets(self, widgets):
-        """ทำ fade-in + slide-up ให้แต่ละ widget"""
-        for i, widget in enumerate(widgets):
-            opacity_effect = QGraphicsOpacityEffect()
-            widget.setGraphicsEffect(opacity_effect)
-            opacity_effect.setOpacity(0)
-
-            start_pos = widget.pos() + QPoint(0, 50)
-            end_pos = widget.pos()
-            widget.move(start_pos)
-
-            def start_animation(w=widget, oe=opacity_effect, sp=start_pos, ep=end_pos):
-                fade_anim = QPropertyAnimation(oe, b"opacity")
-                fade_anim.setDuration(1000)
-                fade_anim.setStartValue(0)
-                fade_anim.setEndValue(1)
-                fade_anim.setEasingCurve(QEasingCurve.Type.InOutCubic)
-
-                slide_anim = QPropertyAnimation(w, b"pos")
-                slide_anim.setDuration(1000)
-                slide_anim.setStartValue(sp)
-                slide_anim.setEndValue(ep)
-                slide_anim.setEasingCurve(QEasingCurve.Type.OutCubic)
-
-                w.fade_anim = fade_anim
-                w.slide_anim = slide_anim
-
-                fade_anim.start()
-                slide_anim.start()
-
-            QTimer.singleShot(i * 100, start_animation)
 
     def send_code_clicked(self):
         """ฟังก์ชันเมื่อกด Send Code"""
@@ -162,13 +122,7 @@ class ForgetPasswordPage(QMainWindow):
         self.send_btn.hide()
         
         self.code_sent = True
-        
-        # Animate ฟิลด์ใหม่
-        self.animate_widgets([
-            self.code_label, self.code,
-            self.pass_label, self.password,
-            self.reset_btn
-        ])
+
 
     def reset_clicked(self):
         """ฟังก์ชันเมื่อกด Reset Password"""

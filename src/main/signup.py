@@ -7,7 +7,7 @@ import sys
 class SignupPage(QMainWindow):
     def __init__(self):
         super().__init__()
-        self.setWindowTitle("Beyond Panels - Sign Up")
+        self.setWindowTitle("Beyond Panels")
         self.showMaximized()
 
         # โหลด stylesheet
@@ -76,16 +76,6 @@ class SignupPage(QMainWindow):
         self.back_btn.setObjectName("backBtn")
         self.back_btn.setGeometry(770, 690, 180, 50)
         self.back_btn.clicked.connect(self.back_clicked)
-
-        # === เรียก animation ===
-        self.animate_widgets([
-            self.title_label,
-            self.user_label, self.username,
-            self.email_label, self.email,
-            self.pass_label, self.password,
-            self.confirm_label, self.confirm_password,
-            self.signup_btn, self.back_btn
-        ])
     
     def load_stylesheet(self, filepath):
         """โหลด QSS stylesheet จากไฟล์"""
@@ -94,38 +84,7 @@ class SignupPage(QMainWindow):
                 self.setStyleSheet(f.read())
         except FileNotFoundError:
             print(f"Warning: Stylesheet file '{filepath}' not found")
-        
-    def animate_widgets(self, widgets):
-        """ทำ fade-in + slide-up ให้แต่ละ widget"""
-        for i, widget in enumerate(widgets):
-            opacity_effect = QGraphicsOpacityEffect()
-            widget.setGraphicsEffect(opacity_effect)
-            opacity_effect.setOpacity(0)
-
-            start_pos = widget.pos() + QPoint(0, 50)
-            end_pos = widget.pos()
-            widget.move(start_pos)
-
-            def start_animation(w=widget, oe=opacity_effect, sp=start_pos, ep=end_pos):
-                fade_anim = QPropertyAnimation(oe, b"opacity")
-                fade_anim.setDuration(1000)
-                fade_anim.setStartValue(0)
-                fade_anim.setEndValue(1)
-                fade_anim.setEasingCurve(QEasingCurve.Type.InOutCubic)
-
-                slide_anim = QPropertyAnimation(w, b"pos")
-                slide_anim.setDuration(1000)
-                slide_anim.setStartValue(sp)
-                slide_anim.setEndValue(ep)
-                slide_anim.setEasingCurve(QEasingCurve.Type.OutCubic)
-
-                w.fade_anim = fade_anim
-                w.slide_anim = slide_anim
-
-                fade_anim.start()
-                slide_anim.start()
-
-            QTimer.singleShot(i * 100, start_animation)
+    
 
     def signup_clicked(self):
         """ฟังก์ชันเมื่อกด Sign Up"""
