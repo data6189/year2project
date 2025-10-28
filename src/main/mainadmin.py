@@ -3,7 +3,7 @@ from PyQt6.QtWidgets import *
 from PyQt6.QtCore import *
 from PyQt6.QtGui import QIcon
 
-class ComicsApp(QMainWindow):
+class MainAdminWindow(QMainWindow):
     def __init__(self):
         super().__init__()
         self.setWindowTitle("Beyond Comics") 
@@ -180,6 +180,6 @@ class ComicsApp(QMainWindow):
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)
-    window = ComicsApp()
+    window = MainAdminWindow()
     window.show()
     sys.exit(app.exec())

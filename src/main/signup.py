@@ -31,7 +31,7 @@ def validate_username(username):
     
 def validate_password(password, username, email):
     """ตรวจสอบ Password ตามกฎ"""
-    WEAK_PASSWORDS = ["123456", "password", "qwerty"]
+    WEAK_PASSWORDS = ["12345678", "password", "qwerty"]
     
     if len(password) < 8:
         return "รหัสผ่านต้องมีอย่างน้อย 8 ตัวอักษร"
