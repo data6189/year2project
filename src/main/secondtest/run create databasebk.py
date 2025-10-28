@@ -8,7 +8,7 @@ from PyQt6.QtGui import *
 from PyQt6.QtCore import *
 
 # === (ADDED) ส่วนสำหรับจัดการฐานข้อมูล ===
-DB_NAME = "account.db"
+DB_NAME = "src/database/thisshop.db"
 
 # === (REMOVED) ฟังก์ชัน hash_password ถูกลบออกแล้ว ===
 

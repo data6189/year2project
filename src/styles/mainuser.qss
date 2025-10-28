@@ -1,13 +1,10 @@
+/* === (ไฟล์เดิมของคุณ) === */
 QMainWindow {
     border-image: url("src/img/user/userbg.png") 0 0 0 0 stretch stretch;
 }
-
-/* === Header (แถบด้านบน) === */
 #Header {
     border-bottom: 1px solid #FFD700;
 }
-
-/* === ปุ่ม Nav ด้านบน (ที่คุณให้มา) === */
 QPushButton#navButton {
     color: #FFD700;
     border: 1px solid #FFD700;
@@ -17,22 +14,18 @@ QPushButton#navButton {
     background-color: rgba(0, 0, 0, 0);
     font-weight: bold;
 }
-
 QPushButton#navButton:hover {
     background-color: #FFD700;
     color: black;
 }
-
 QPushButton#navButton:pressed {
     background-color: #DAA520;
 }
-
-/* === Sidebar (แถบด้านซ้าย) === */
 #Sidebar {
-    max-width: 200px; /* จำกัดความกว้าง */
+    /* (คุณกำหนด max-width: 200px ในไฟล์เดิม) */
+    /* (แต่ในโค้ดตั้ง setFixedWidth(260) ถ้าต้องการ 200 ให้แก้ในโค้ด) */
+     max-width: 260px; /* (ปรับตามโค้ด) */
 }
-
-/* === ปุ่ม Sidebar (สไตล์สีดำตามที่ขอ) === */
 QPushButton#sidebarButton {
     color: white;
     border: 1px solid #222;
@@ -40,42 +33,151 @@ QPushButton#sidebarButton {
     padding: 10px;
     border-radius: 5px;
     background-color: #333333; /* สีดำ/เทาเข้ม */
-    text-align: left; /* จัดข้อความชิดซ้าย */
+    text-align: left;
     padding-left: 20px;
 }
-
 QPushButton#sidebarButton:hover {
-    background-color: #555555; /* สว่างขึ้นเมื่อชี้ */
+    background-color: #555555;
 }
-
 QPushButton#sidebarButton:pressed {
-    background-color: #111111; /* เข้มขึ้นเมื่อกด */
+    background-color: #111111;
 }
 
-/* === ส่วนแสดงผลหลัก (Content) === */
-MainContent {
-    background-color: rgba(255, 255, 255, 0.5); /* พื้นหลังสีขาว โปร่งแสงเล็กน้อย */    
-    border-radius: 1px;
+/* (นี่คือ #MainContent เดิมของคุณ) */
+/* (เปลี่ยนชื่อเป็น #MainContent, #ProfilePage) */
+/*#MainContent, #ProfilePage {
+    background-color: rgba(255, 255, 255, 0.5); /* พื้นหลังสีขาว โปร่งแสงเล็กน้อย */     
+/*    border-radius: 1px;
 }
 
+/* (ปุ่ม Search เดิม) */
+QPushButton#searchButton {
+    color: white;
+    background-color: #333;
+    border: 1px solid #222;
+    font-size: 16px;
+    padding: 8px;
+    border-radius: 5px;
+    font-weight: bold;
+}
 QPushButton#searchButton:hover {
-    background-color: #555555; /* สว่างขึ้นเมื่อชี้ */
+    background-color: #555555;
 }
-
-/* === Scroll Area (ที่ทำหน้าที่เหมือน iframe) === */
 QScrollArea {
-    border: none; /* ไม่มีขอบ */
-    background-color: transparent; /* พื้นหลังโปร่งใส */
+    border: none;
+    background-color: transparent;
 }
-
 #scrollContent {
-    background-color: transparent; /* พื้นหลังโปร่งใส */
+    background-color: transparent;
 }
-
-/* === ป้าย "Browse Comics" === */
 #browseLabel {
     font-size: 24px;
     font-weight: bold;
     color: #333;
     padding: 10px;
 }
+/* (เพิ่ม) searchBox และ sortCombo (จากโค้ด) */
+#searchBox {
+    font-size: 16px;
+    padding: 5px 10px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+}
+QComboBox#sortCombo {
+    font-size: 14px;
+    padding: 5px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+}
+/* (เพิ่ม) placeholder (จากโค้ด) */
+#comicPlaceholder {
+    border: 1px solid #ccc; 
+    background-color: #f0f0f0;
+    font-size: 14px;
+    color: #555;
+}
+
+/* === (เพิ่ม) สไตล์สำหรับหน้า Profile === */
+
+/* Label รูปโปรไฟล์ (ทำให้เป็นวงกลม) */
+#profilePicLabel {
+    border: 3px solid #FFD700; /* กรอบสีทอง */
+    border-radius: 100px; /* (ครึ่งหนึ่งของขนาด 200px) */
+    background-color: #eee;
+    min-width: 200px;
+    min-height: 200px;
+    overflow: hidden;
+}
+
+/* Label ที่แสดงชื่อหัวข้อ (Username, First Name...) */
+#profileInfoFrame QLabel {
+    font-size: 18px;
+    font-weight: bold;
+    color: #000000;
+    padding-top: 5px;
+}
+
+/* ช่องแสดงข้อมูล (ReadOnly) */
+QLineEdit#profileDataField, QTextEdit#profileDataField {
+    background-color: white; /* <--- แก้ไขเป็นสีขาว */
+    color: rgb(0, 0, 0);            /* <--- แก้ไขเป็นสีดำ */
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    padding: 8px;
+    font-size: 15px;
+}
+
+
+/* ปุ่ม Edit Profile */
+QPushButton#editProfileButton {
+    color: rgb(0, 0, 0);
+    border: 1px solid #938e8e;
+    font-size: 16px;
+    padding: 8px;
+    border-radius: 5px;
+    /*background-color: #333; /* สีดำ/เทาเข้ม */
+    font-weight: bold;
+}
+QPushButton#editProfileButton:hover {
+    background-color: #00aeff;
+}
+
+/* ปุ่ม upload profile */
+QPushButton#uploadButton{
+    color: rgb(0, 0, 0);
+    border: 1px solid #000000;
+    font-size: 16px;
+    padding: 8px;
+    border-radius: 5px;
+    /*background-color: #333; /* สีดำ/เทาเข้ม */
+    font-weight: bold;
+}
+
+QPushButton#uploadButton:hover {
+    background-color: #00aeff;
+}
+
+/* ปุ่ม Confirm Profile */
+QPushButton#confirmProfileButton {
+    color: white; /* สีตัวอักษร */
+    background-color: #28a745; /* สีเขียว (Confirm) */
+    border: 1px solid #218838; /* สีขอบ */
+    
+    /* === (ส่วนที่ตรงกับ #navButton ตามที่คุณขอ) === */
+    font-size: 16px;
+    font-weight: bold;
+    
+    /* (ส่วนที่ทำให้ขนาดปุ่ม (padding) สอดคล้องกัน) */
+    padding: 8px;
+    border-radius: 5px;
+}
+
+QPushButton#confirmProfileButton:hover {
+    background-color: #218838; /* เข้มขึ้นเมื่อ hover */
+}
+
+QPushButton#confirmProfileButton:pressed {
+    background-color: #1e7e34; /* เข้มสุดเมื่อกด */
+}
+
+

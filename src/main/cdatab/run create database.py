@@ -1,7 +1,7 @@
 import sqlite3
 
 # === (ADDED) ส่วนสำหรับจัดการฐานข้อมูล ===
-DB_NAME = "account.db"
+DB_NAME = "src/database/thisshop.db"
 
 def initialize_database():
     """สร้างไฟล์ database และตาราง users หากยังไม่มี"""
@@ -19,7 +19,25 @@ def initialize_database():
         gender TEXT,
         email TEXT NOT NULL UNIQUE,
         phone TEXT,
-        Price,
+        address TEXT,
+        role TEXT NOT NULL,
         profile_img TEXT
     )
     """)
+    
+    # สร้าง user 'admin' เริ่มต้น (หากยังไม่มี)
+    try:
+        # (MODIFIED: ใส่ "data" ลงไปตรงๆ)
+        cursor.execute("""
+        INSERT OR IGNORE INTO users (username, password, role, email, profile_img) 
+        VALUES (?, ?, ?, ?, ?)
+        """, ("data6189", "data", "admin", "admin@example.com", None))
+        
+        conn.commit()
+        print("Database initialized successfully (Passwords stored as plain text).")
+    except sqlite3.Error as e:
+        print(f"Error initializing database: {e}")
+    finally:
+        conn.close()
+
+initialize_database() 
