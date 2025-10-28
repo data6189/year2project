@@ -7,7 +7,6 @@ from PyQt6.QtCore import *
 
 # (สำคัญ) ตรวจสอบให้แน่ใจว่าเส้นทางไปยังฐานข้อมูลถูกต้อง
 DB_PATH = "src/database/thisshop.db" 
-conn = sqlite3.connect(DB_PATH)
 
 class MainUserWindow(QMainWindow):
     logout_requested = pyqtSignal()
@@ -20,7 +19,6 @@ class MainUserWindow(QMainWindow):
         self.current_profile_img_path = None # เส้นทางรูปโปรไฟล์ปัจจุบันจาก DB
         self.editable_profile_fields = [] # รายการช่องที่แก้ไขได้
 
-        # (เพิ่ม) ตัวแปรสถานะสำหรับโหมดแก้ไข
         self.is_in_edit_mode = False
 
         self.setWindowTitle(f"Beyond Comics - Welcome {self.current_username}") 
@@ -34,48 +32,44 @@ class MainUserWindow(QMainWindow):
         self.main_layout.setContentsMargins(0, 0, 0, 0)
         self.main_layout.setSpacing(0)
 
-        # สร้างส่วน Header
         self.header_frame = self.create_header()
         self.main_layout.addWidget(self.header_frame)
 
-        # สร้างส่วน Body (Sidebar + Content)
         self.body_widget = QWidget()
         self.body_layout = QHBoxLayout(self.body_widget)
         self.body_layout.setContentsMargins(0, 0, 0, 0)
         self.body_layout.setSpacing(0)
 
-        # 1. Stack สำหรับ Sidebar
         self.sidebar_stack = QStackedWidget()
         self.sidebar_stack.setFixedWidth(260)
         
-        self.browse_sidebar = self.create_browse_sidebar() # Sidebar หน้าหลัก
-        self.profile_sidebar = self.create_profile_sidebar() # Sidebar หน้าโปรไฟล์
+        self.browse_sidebar = self.create_browse_sidebar()
+        self.profile_sidebar = self.create_profile_sidebar()
         
         self.sidebar_stack.addWidget(self.browse_sidebar)
         self.sidebar_stack.addWidget(self.profile_sidebar)
         
         self.body_layout.addWidget(self.sidebar_stack) 
 
-        # 2. Stack สำหรับเนื้อหาหลัก
         self.main_content_stack = QStackedWidget()
-        self.browse_page = self.create_browse_page() # หน้าหลัก
-        self.profile_page = self.create_profile_page() # หน้าโปรไฟล์
+        self.browse_page = self.create_browse_page()
+        self.profile_page = self.create_profile_page()
 
         self.main_content_stack.addWidget(self.browse_page)
         self.main_content_stack.addWidget(self.profile_page)
         
-        self.body_layout.addWidget(self.main_content_stack, 1) # (1 = ยืดขยายได้)
+        self.body_layout.addWidget(self.main_content_stack, 1)
 
         self.main_layout.addWidget(self.body_widget, 1)
 
-        self.load_stylesheet("src/styles/mainuser.qss") # โหลด Stylesheet
-        self.load_user_profile() # โหลดข้อมูลผู้ใช้
+        # (แก้ไข) ตรวจสอบให้แน่ใจว่าโหลดไฟล์ QSS ที่ถูกต้อง
+        self.load_stylesheet("src/styles/mainuser.qss")
+        self.load_user_profile()
         
-        self.set_profile_fields_read_only(True) # ตั้งค่าเริ่มต้นเป็นโหมดอ่านอย่างเดียว
+        self.set_profile_fields_read_only(True)
 
 
     def load_stylesheet(self, filepath):
-        # โหลดไฟล์ QSS
         try:
             with open(filepath, 'r', encoding='utf-8') as f:
                 self.setStyleSheet(f.read())
@@ -85,19 +79,17 @@ class MainUserWindow(QMainWindow):
             print(f"เกิดข้อผิดพลาดในการโหลด stylesheet: {e}")
 
     def create_header(self):
-        # สร้าง Frame ส่วนหัว
         header_frame = QFrame()
         header_frame.setObjectName("Header")
         header_frame.setFixedHeight(185)
         header_layout = QHBoxLayout(header_frame)
         header_layout.setContentsMargins(50, 10, 50, 10)
         header_layout.setSpacing(120)
-        header_layout.addStretch() # ดันไปทางขวา
+        header_layout.addStretch()
 
         button_height = 60
         button_width = 190
         
-        # ปุ่ม Cart
         cart_icon = QIcon("src/img/icon/cart.png") 
         cart_button = QPushButton(" CART") 
         cart_button.setIcon(cart_icon)
@@ -106,7 +98,6 @@ class MainUserWindow(QMainWindow):
         cart_button.setFixedSize(button_width, button_height)
         header_layout.addWidget(cart_button)
 
-        # ปุ่ม Profile
         profile_icon = QIcon("src/img/icon/profile.png") 
         profile_button = QPushButton(" PROFILE")
         profile_button.setIcon(profile_icon)
@@ -116,7 +107,6 @@ class MainUserWindow(QMainWindow):
         profile_button.clicked.connect(self.show_profile_page)
         header_layout.addWidget(profile_button)
 
-        # ปุ่ม Logout
         logout_button = QPushButton("LOGOUT")
         logout_button.setObjectName("navButton")
         logout_button.setFixedSize(button_width, button_height)
@@ -126,7 +116,6 @@ class MainUserWindow(QMainWindow):
         return header_frame
 
     def create_browse_sidebar(self):
-        # สร้าง Sidebar สำหรับหน้า Browse (หน้าหลัก)
         sidebar_frame = QFrame()
         sidebar_frame.setObjectName("Sidebar") 
         sidebar_layout = QVBoxLayout(sidebar_frame)
@@ -154,10 +143,17 @@ class MainUserWindow(QMainWindow):
         btn_image.clicked.connect(self.show_browse_page)
         sidebar_layout.addWidget(btn_image)
         sidebar_layout.addStretch()
+        
+        btn_image = QPushButton("ALL")
+        btn_image.setObjectName("sidebarButton")
+        btn_image.setFixedHeight(button_height)
+        btn_image.clicked.connect(self.show_browse_page)
+        sidebar_layout.addWidget(btn_image)
+        sidebar_layout.addStretch()
+        
         return sidebar_frame
 
     def create_profile_sidebar(self):
-        # สร้าง Sidebar สำหรับหน้า Profile
         sidebar_frame = QFrame()
         sidebar_frame.setObjectName("Sidebar") 
         sidebar_layout = QVBoxLayout(sidebar_frame)
@@ -168,29 +164,27 @@ class MainUserWindow(QMainWindow):
         button_height = 55
 
         btn_profile = QPushButton("PROFILE")
-        btn_profile.setObjectName("sidebarButton")
+        btn_profile.setObjectName("profilesidebarButton")
         btn_profile.setFixedHeight(button_height)
-        btn_profile.setEnabled(False) # ปิดการใช้งาน
+        btn_profile.setEnabled(False)
         sidebar_layout.addWidget(btn_profile)
 
         btn_back = QPushButton("Back")
-        btn_back.setObjectName("sidebarButton")
+        btn_back.setObjectName("backsidebarButton")
         btn_back.setFixedHeight(button_height)
-        btn_back.clicked.connect(self.show_browse_page) # กลับไปหน้า Browse
+        btn_back.clicked.connect(self.show_browse_page)
         sidebar_layout.addWidget(btn_back)
         
         sidebar_layout.addStretch()
         return sidebar_frame
 
     def create_browse_page(self):
-        # สร้างเนื้อหาหน้า Browse (หน้าหลัก)
         main_content_frame = QFrame()
         main_content_frame.setObjectName("MainContent") 
         main_layout = QVBoxLayout(main_content_frame)
         main_layout.setSpacing(20)
-        main_layout.setContentsMargins(300, 20, 20, 20) # Margin ซ้าย 300
+        main_layout.setContentsMargins(300, 20, 20, 20)
 
-        # (ส่วนโค้ดของหน้า Browse... ไม่เปลี่ยนแปลง)
         browse_header_layout = QHBoxLayout()
         browse_label = QLabel("BROWSE")
         browse_label.setObjectName("browseLabel")
@@ -240,12 +234,11 @@ class MainUserWindow(QMainWindow):
         return main_content_frame
 
     def create_profile_page(self):
-        # สร้างเนื้อหาหน้า Profile
         profile_frame = QFrame()
         profile_frame.setObjectName("ProfilePage") 
         
         main_profile_layout = QVBoxLayout(profile_frame)
-        main_profile_layout.setContentsMargins(300, 50, 50, 50) # Margin ซ้าย 300
+        main_profile_layout.setContentsMargins(300, 50, 50, 50)
         main_profile_layout.setSpacing(30)
         main_profile_layout.setAlignment(Qt.AlignmentFlag.AlignTop)
 
@@ -253,41 +246,36 @@ class MainUserWindow(QMainWindow):
         top_layout.setSpacing(10)
         top_layout.setAlignment(Qt.AlignmentFlag.AlignTop)
 
-        # --- ส่วนซ้าย (Container สำหรับรูปภาพ & ปุ่มอัปโหลด) ---
-        left_container = QWidget() # 1. สร้าง QWidget ครอบ
-        left_pic_layout = QVBoxLayout() # 2. สร้าง Layout ภายใน
+        left_container = QWidget()
+        left_pic_layout = QVBoxLayout()
         left_pic_layout.setSpacing(10)
         left_pic_layout.setAlignment(Qt.AlignmentFlag.AlignTop)
-        left_pic_layout.setContentsMargins(0,0,0,0) # (สำคัญ) ไม่เว้นขอบใน Container
+        left_pic_layout.setContentsMargins(0,0,0,0)
 
-        # Label รูปโปรไฟล์
         self.profile_pic_label = QLabel()
         self.profile_pic_label.setObjectName("profilePicLabel")
-        self.profile_pic_label.setFixedSize(200, 200)
+        # --- ขนาดของ Label รูปโปรไฟล์ (ปรับเป็น 250x250) ---
+        self.profile_pic_label.setFixedSize(250, 250) 
         
-        # ปุ่มอัปโหลด (ซ่อนไว้)
         self.upload_button = QPushButton(" Upload Profile image")
         try:
-            # ลองโหลดไอคอนอัปโหลด
             upload_icon = QIcon(QPixmap("src/img/icon/upload.png")) 
             self.upload_button.setIcon(upload_icon)
             self.upload_button.setIconSize(QSize(40, 40))
         except:
              print("คำเตือน: ไม่พบไอคอนอัปโหลด 'src/img/icon/upload.png'")
-             
+            
         self.upload_button.setObjectName("uploadButton") 
         self.upload_button.setFixedHeight(40)
         self.upload_button.clicked.connect(self.select_profile_image)
-        self.upload_button.setVisible(False) # ซ่อนไว้ตอนเริ่มต้น
+        self.upload_button.setVisible(False)
         
         left_pic_layout.addWidget(self.profile_pic_label)
         left_pic_layout.addWidget(self.upload_button)
         
-        left_container.setLayout(left_pic_layout) # 3. ตั้ง Layout ให้ Container
-        top_layout.addWidget(left_container, 0, alignment=Qt.AlignmentFlag.AlignTop) # 4. เพิ่ม Container
+        left_container.setLayout(left_pic_layout)
+        top_layout.addWidget(left_container, 0, alignment=Qt.AlignmentFlag.AlignTop)
         
-
-        # --- ส่วนขวา (ฟอร์มข้อมูล) --- (ไม่เปลี่ยนแปลง)
         info_frame = QFrame()
         info_frame.setObjectName("profileInfoFrame")
         info_layout = QFormLayout(info_frame) 
@@ -297,23 +285,30 @@ class MainUserWindow(QMainWindow):
         self.profile_username_field = QLineEdit()
         self.profile_fname_field = QLineEdit()
         self.profile_lname_field = QLineEdit()
-        self.profile_gender_field = QLineEdit() 
+        self.profile_gender_field = QComboBox() 
+        self.profile_gender_field.addItems(["ชาย", "หญิง", "อื่น ๆ"])
+        self.profile_gender_field.setObjectName("profileDataField") 
+        
         self.profile_email_field = QLineEdit()
         self.profile_phone_field = QLineEdit()
         self.profile_address_field = QTextEdit() 
         
-        # รายการช่องที่อนุญาตให้แก้ไข
         self.editable_profile_fields = [
             self.profile_fname_field, self.profile_lname_field,
-            self.profile_gender_field, self.profile_email_field,
+            self.profile_gender_field,
+            self.profile_email_field,
             self.profile_phone_field, self.profile_address_field
         ]
         
-        self.profile_username_field.setReadOnly(True) # Username ห้ามแก้ไข
+        self.profile_username_field.setReadOnly(True)
         self.profile_username_field.setObjectName("profileDataField")
         
         for field in self.editable_profile_fields:
-            field.setReadOnly(True) # ตั้งเป็นอ่านอย่างเดียว
+            if isinstance(field, (QLineEdit, QTextEdit)):
+                field.setReadOnly(True)
+            elif isinstance(field, QComboBox):
+                field.setEnabled(False)
+                
             field.setObjectName("profileDataField") 
 
         self.profile_address_field.setFixedHeight(100) 
@@ -329,53 +324,86 @@ class MainUserWindow(QMainWindow):
         top_layout.addWidget(info_frame, 1) 
         main_profile_layout.addLayout(top_layout)
 
-        # --- ส่วนล่าง (ปุ่ม) ---
         self.bottom_button_layout = QHBoxLayout()
-        self.bottom_button_layout.setSpacing(10) # ระยะห่างระหว่างปุ่ม
+        self.bottom_button_layout.setSpacing(10)
         
-        # ปุ่ม Edit
         edit_icon = QIcon("src/img/icon/edit.png") 
         self.edit_button = QPushButton(" Edit profile")
         self.edit_button.setIcon(edit_icon)
-        self.edit_button.setIconSize(QSize(50, 50)) # ขนาดไอคอน 50x50
+        self.edit_button.setIconSize(QSize(50, 50))
         self.edit_button.setObjectName("editProfileButton") 
-        self.edit_button.setFixedSize(190, 60) # ขนาด 190x60 (เท่า Header)
+        self.edit_button.setFixedSize(190, 60)
         
-        # (แก้ไข) เชื่อมต่อกับฟังก์ชันสลับโหมด
         self.edit_button.clicked.connect(self.toggle_edit_mode) 
         
-        self.bottom_button_layout.addWidget(self.edit_button, 0) # เพิ่มปุ่ม Edit (ชิดซ้าย)
+        self.bottom_button_layout.addWidget(self.edit_button, 0)
         
-        # ปุ่ม Confirm
         confirm_icon = QIcon("src/img/icon/confirm.png") 
         self.confirm_button = QPushButton(" Confirm")
         self.confirm_button.setIcon(confirm_icon)
-        self.confirm_button.setIconSize(QSize(50, 50)) # ขนาดไอคอน 50x50
+        self.confirm_button.setIconSize(QSize(50, 50))
         self.confirm_button.setObjectName("confirmProfileButton") 
-        self.confirm_button.setFixedSize(190, 60) # ขนาด 190x60 (เท่า Header)
+        self.confirm_button.setFixedSize(190, 60)
         self.confirm_button.clicked.connect(self.save_profile_changes)
-        self.confirm_button.setVisible(False) # ซ่อนไว้
+        self.confirm_button.setVisible(False)
         
-        self.bottom_button_layout.addWidget(self.confirm_button, 0) # เพิ่มปุ่ม Confirm
+        self.bottom_button_layout.addWidget(self.confirm_button, 0)
         
-        self.bottom_button_layout.addStretch(1) # ดันปุ่มไปทางซ้าย
+        self.bottom_button_layout.addStretch(1)
         
         main_profile_layout.addLayout(self.bottom_button_layout)
         main_profile_layout.addStretch()
 
         return profile_frame
 
-    def load_user_profile(self):
-        # โหลดข้อมูลผู้ใช้จาก DB มาแสดง
+    # --- (แก้ไข) ---
+    # เปลี่ยนชื่อจาก create_circular_pixmap เป็น create_scaled_pixmap
+    # และลบโค้ดส่วนที่ทำให้เป็นวงกลม (QPainter, QPainterPath)
+    def create_scaled_pixmap(self, image_path, size):
+        """
+        สร้าง QPixmap สี่เหลี่ยมที่สเกลแล้วจาก image_path ที่กำหนด
+        """
         try:
+            source_pixmap = QPixmap(image_path)
+            if source_pixmap.isNull():
+                # ถ้า path ไม่ถูกต้อง หรือไฟล์เสียหาย ให้ใช้รูป default
+                print(f"คำเตือน: ไม่พบไฟล์รูปภาพที่ '{image_path}', ใช้รูปโปรไฟล์เริ่มต้น")
+                source_pixmap = QPixmap("src/img/icon/profile.png")
+                if source_pixmap.isNull():
+                        # ถ้าไฟล์ default ก็ไม่มี ให้สร้าง pixmap สีเทาขึ้นมาแทน
+                    print("คำเตือน: ไม่พบรูปโปรไฟล์เริ่มต้น 'src/img/icon/profile.png'")
+                    source_pixmap = QPixmap(size, size)
+                    source_pixmap.fill(Qt.GlobalColor.gray)
+
+        except Exception as e:
+            print(f"เกิดข้อผิดพลาดขณะโหลด QPixmap: {e}")
+            source_pixmap = QPixmap(size, size)
+            source_pixmap.fill(Qt.GlobalColor.gray)
+
+        # 1. สเกลภาพให้เป็นสี่เหลี่ยมจัตุรัสขนาดที่กำหนด
+        # (ใช้ IgnoreAspectRatio เพื่อบังคับให้ภาพพอดีกับกรอบ 250x250)
+        scaled_pixmap = source_pixmap.scaled(
+            size, size, 
+            Qt.AspectRatioMode.IgnoreAspectRatio, 
+            Qt.TransformationMode.SmoothTransformation
+        )
+
+        # 8. คืนค่า pixmap ที่สเกลแล้ว
+        return scaled_pixmap
+    # --- (สิ้นสุดการแก้ไข) ---
+
+    def load_user_profile(self):
+        try:
+            target_size = 250 # ขนาดที่ตรงกับ QLabel (250x250)
+            
             if not os.path.exists(DB_PATH):
                 print(f"ข้อผิดพลาด: ไม่พบไฟล์ DB ขณะโหลดโปรไฟล์: {DB_PATH}")
                 self.profile_username_field.setText(self.current_username)
                 self.profile_fname_field.setText("N/A (DB not found)")
-                # (โหลดไอคอนเริ่มต้น)
-                self.profile_pic_label.setPixmap(QPixmap("src/img/icon/profile.png").scaled(
-                    200, 200, Qt.AspectRatioMode.KeepAspectRatioByExpanding, Qt.TransformationMode.SmoothTransformation
-                ))
+                
+                # --- (แก้ไข) เรียกใช้ create_scaled_pixmap ---
+                default_pixmap = self.create_scaled_pixmap("src/img/icon/profile.png", target_size)
+                self.profile_pic_label.setPixmap(default_pixmap)
                 return
 
             conn = sqlite3.connect(DB_PATH)
@@ -391,114 +419,112 @@ class MainUserWindow(QMainWindow):
             conn.close()
 
             if user_data:
-                # ถ้าพบข้อมูล
                 fname, lname, gender, email, phone, address, img_path = user_data
                 
                 self.profile_username_field.setText(self.current_username)
                 self.profile_fname_field.setText(fname or "")
                 self.profile_lname_field.setText(lname or "")
-                self.profile_gender_field.setText(gender or "")
+                
+                gender_value = gender or ""
+                index = self.profile_gender_field.findText(gender_value, Qt.MatchFlag.MatchFixedString)
+                if index >= 0:
+                    self.profile_gender_field.setCurrentIndex(index)
+                else:
+                    self.profile_gender_field.setCurrentIndex(0)
+                    if gender_value not in ["", "N/A"]:
+                            print(f"คำเตือน: เพศ '{gender_value}' จาก DB ไม่ตรงกับตัวเลือก, ตั้งเป็นค่าเริ่มต้น")
+                
                 self.profile_email_field.setText(email or "")
                 self.profile_phone_field.setText(phone or "") 
                 self.profile_address_field.setText(address or "")
                 
-                self.current_profile_img_path = img_path # เก็บเส้นทางรูปภาพปัจจุบัน
-                self.new_profile_img_path = None # รีเซ็ตเส้นทางรูปภาพใหม่
+                self.current_profile_img_path = img_path
+                self.new_profile_img_path = None
 
-                if img_path and os.path.exists(img_path):
-                    user_pixmap = QPixmap(img_path)
-                else:
-                    user_pixmap = QPixmap("src/img/icon/profile.png") # รูปเริ่มต้น
-
-                self.profile_pic_label.setPixmap(user_pixmap.scaled(
-                    200, 200, Qt.AspectRatioMode.KeepAspectRatioByExpanding, Qt.TransformationMode.SmoothTransformation
-                ))
+                # --- (แก้ไข) เรียกใช้ create_scaled_pixmap ---
+                image_path_to_load = img_path if (img_path and os.path.exists(img_path)) else "src/img/icon/profile.png"
+                scaled_pixmap = self.create_scaled_pixmap(image_path_to_load, target_size)
+                self.profile_pic_label.setPixmap(scaled_pixmap)
+                
             else:
-                # ถ้าไม่พบข้อมูล (เช่น ผู้ใช้ 'test' ที่เพิ่งสร้าง)
                 print(f"ไม่พบผู้ใช้: {self.current_username}")
                 self.profile_username_field.setText(self.current_username)
                 self.profile_fname_field.setText("N/A")
                 self.profile_lname_field.setText("N/A")
-                self.profile_pic_label.setPixmap(QPixmap("src/img/icon/profile.png").scaled(
-                    200, 200, Qt.AspectRatioMode.KeepAspectRatioByExpanding, Qt.TransformationMode.SmoothTransformation
-                ))
+                self.profile_gender_field.setCurrentIndex(0)
+                
+                # --- (แก้ไข) เรียกใช้ create_scaled_pixmap ---
+                default_pixmap = self.create_scaled_pixmap("src/img/icon/profile.png", target_size)
+                self.profile_pic_label.setPixmap(default_pixmap)
 
         except Exception as e:
             print(f"เกิดข้อผิดพลาดในการโหลดโปรไฟล์: {e}")
             QMessageBox.warning(self, "Error", f"ไม่สามารถโหลดข้อมูลโปรไฟล์ได้: {e}")
 
     def set_profile_fields_read_only(self, read_only):
-        # ตั้งค่าช่องข้อมูลเป็น อ่านอย่างเดียว หรือ แก้ไขได้
         for field in self.editable_profile_fields:
-            field.setReadOnly(read_only)
-            # ตั้งค่า Property 'readOnly' เพื่อให้ QSS ทำงานได้
-            field.setProperty("readOnly", read_only) 
-            self.style().polish(field) # บังคับใช้ QSS ใหม่
             
-        self.profile_address_field.setReadOnly(read_only)
-        self.profile_address_field.setProperty("readOnly", read_only)
-        self.style().polish(self.profile_address_field)
+            is_read_only_widget = isinstance(field, (QLineEdit, QTextEdit))
+            is_combo_box = isinstance(field, QComboBox)
+
+            if is_read_only_widget:
+                field.setReadOnly(read_only)
+            elif is_combo_box:
+                field.setEnabled(not read_only)
+
+            field.setProperty("readOnly", read_only) 
+            self.style().polish(field)
 
 
     def enable_edit_mode(self):
-        """เปิดใช้งาน UI สำหรับการแก้ไขเท่านั้น"""
         self.set_profile_fields_read_only(False)
         self.upload_button.setVisible(True)
         self.confirm_button.setVisible(True)
-        # (ปุ่ม Edit ยังคงแสดงอยู่)
 
     def disable_edit_mode(self):
-        """ปิดใช้งาน UI การแก้ไข และ โหลดโปรไฟล์ใหม่ (เท่ากับยกเลิก)"""
         self.set_profile_fields_read_only(True)
         self.upload_button.setVisible(False)
         self.confirm_button.setVisible(False)
-        self.edit_button.setVisible(True) # (ตรวจสอบให้แน่ใจว่าแสดงอยู่)
-        self.load_user_profile() # (สำคัญ: รีเซ็ตการเปลี่ยนแปลงที่ยังไม่บันทึก)
+        self.edit_button.setVisible(True)
+        self.load_user_profile()
 
-    # (เพิ่ม) ฟังก์ชันสลับโหมดใหม่
     def toggle_edit_mode(self):
         if self.is_in_edit_mode:
-            # (การกระทำ: ยกเลิก)
             print("ยกเลิกการแก้ไขโปรไฟล์")
-            self.disable_edit_mode() # รีเซ็ต UI และโหลดข้อมูลใหม่
+            self.disable_edit_mode()
             self.is_in_edit_mode = False
         else:
-            # (การกระทำ: แก้ไข)
             print("เปิดใช้งานการแก้ไขโปรไฟล์")
-            self.enable_edit_mode() # ปลดล็อก UI
+            self.enable_edit_mode()
             self.is_in_edit_mode = True
 
     def select_profile_image(self):
-        # เปิดหน้าต่างเลือกไฟล์รูปภาพ
         file_path, _ = QFileDialog.getOpenFileName(
             self, 
             "Select Profile Image", 
-            "", # ไดเรกทอรีเริ่มต้น
-            "Images (*.png *.jpg *.jpeg *.bmp)" # ตัวกรองไฟล์
+            "",
+            "Images (*.png *.jpg *.jpeg *.bmp)"
         )
         
         if file_path:
-            # ใช้ os.path.normpath เพื่อให้แน่ใจว่าเส้นทางไฟล์ถูกต้อง (เช่น ใช้ \ หรือ / ให้ถูก)
             self.new_profile_img_path = os.path.normpath(file_path)
             
-            # แสดงรูปภาพที่เลือก
-            new_pixmap = QPixmap(self.new_profile_img_path)
-            self.profile_pic_label.setPixmap(new_pixmap.scaled(
-                200, 200, Qt.AspectRatioMode.KeepAspectRatioByExpanding, Qt.TransformationMode.SmoothTransformation
-            ))
+            # --- (แก้ไข) เรียกใช้ create_scaled_pixmap ---
+            target_size = 250 # ขนาดที่ตรงกับ QLabel (250x250)
+            scaled_pixmap = self.create_scaled_pixmap(self.new_profile_img_path, target_size)
+            self.profile_pic_label.setPixmap(scaled_pixmap)
+            
             print(f"เลือกรูปโปรไฟล์ใหม่: {self.new_profile_img_path}")
 
     def save_profile_changes(self):
-        # บันทึกการเปลี่ยนแปลงลงฐานข้อมูล
         try:
             fname = self.profile_fname_field.text()
             lname = self.profile_lname_field.text()
-            gender = self.profile_gender_field.text()
+            gender = self.profile_gender_field.currentText() 
             email = self.profile_email_field.text()
             phone = self.profile_phone_field.text()
             address = self.profile_address_field.toPlainText()
             
-            # ตัดสินใจว่าจะใช้รูปภาพไหนบันทึก (รูปใหม่ หรือ รูปเดิม)
             image_to_save = self.new_profile_img_path if self.new_profile_img_path else self.current_profile_img_path
 
             conn = sqlite3.connect(DB_PATH)
@@ -526,7 +552,6 @@ class MainUserWindow(QMainWindow):
 
             self.disable_edit_mode()
             
-            # (เพิ่ม) รีเซ็ตสถานะ
             self.is_in_edit_mode = False 
 
         except Exception as e:
@@ -535,35 +560,29 @@ class MainUserWindow(QMainWindow):
 
 
     def show_profile_page(self):
-        # สลับไปหน้าโปรไฟล์
-        self.disable_edit_mode() # ปิดโหมดแก้ไข (หากเปิดอยู่)
-        self.load_user_profile() # โหลดข้อมูลล่าสุด
+        self.disable_edit_mode()
+        self.load_user_profile()
         
-        # (เพิ่ม) รีเซ็ตสถานะ
         self.is_in_edit_mode = False 
         
-        self.sidebar_stack.setCurrentIndex(1) # สลับ Sidebar
-        self.main_content_stack.setCurrentIndex(1) # สลับ Content
+        self.sidebar_stack.setCurrentIndex(1)
+        self.main_content_stack.setCurrentIndex(1)
 
     def show_browse_page(self):
-        # สลับไปหน้า Browse
-        self.sidebar_stack.setCurrentIndex(0) # สลับ Sidebar
-        self.main_content_stack.setCurrentIndex(0) # สลับ Content
+        self.sidebar_stack.setCurrentIndex(0)
+        self.main_content_stack.setCurrentIndex(0)
 
     def handle_logout(self):
-        # แสดงหน้าต่างยืนยันการออกจากระบบ
         reply = QMessageBox.question(self, 'Logout', 'Are you sure you want to logout?',
                                      QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
                                      QMessageBox.StandardButton.No)
 
         if reply == QMessageBox.StandardButton.Yes:
-            self.logout_requested.emit() # ส่ง Signal บอกว่าต้องการ Logout
-            self.close() # ปิดหน้าต่างนี้
+            self.logout_requested.emit()
+            self.close()
 
 if __name__ == '__main__':
-    # ส่วนสำหรับทดสอบรันไฟล์นี้โดยตรง
     app = QApplication(sys.argv)
-    window = MainUserWindow(username="test") # ทดสอบด้วยผู้ใช้ 'test'
+    window = MainUserWindow(username="test")
     window.show()
     sys.exit(app.exec())
-

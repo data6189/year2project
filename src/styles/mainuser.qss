@@ -102,9 +102,9 @@ QComboBox#sortCombo {
 /* Label รูปโปรไฟล์ (ทำให้เป็นวงกลม) */
 #profilePicLabel {
     border: 3px solid #FFD700; /* กรอบสีทอง */
-    border-radius: 100px; /* (ครึ่งหนึ่งของขนาด 200px) */
-    background-color: #eee;
-    min-width: 200px;
+    border-radius: 5px; /* (ครึ่งหนึ่งของขนาด 200px) */
+    background-color: #eee;}
+    /*min-width: 200px;
     min-height: 200px;
     overflow: hidden;
 }
@@ -118,13 +118,40 @@ QComboBox#sortCombo {
 }
 
 /* ช่องแสดงข้อมูล (ReadOnly) */
-QLineEdit#profileDataField, QTextEdit#profileDataField {
+QLineEdit#profileDataField, 
+QTextEdit#profileDataField, 
+QComboBox#profileDataField {
     background-color: white; /* <--- แก้ไขเป็นสีขาว */
     color: rgb(0, 0, 0);            /* <--- แก้ไขเป็นสีดำ */
     border: 1px solid #ccc;
     border-radius: 5px;
     padding: 8px;
     font-size: 15px;
+}
+
+QPushButton#profilesidebarButton{
+    color: #ffffff;
+    border: 1px solid #000000;
+    font-size: 16px;
+    padding: 8px;
+    border-radius: 5px;
+    background-color: #000000;
+    font-weight: bold;
+}
+
+QPushButton#backsidebarButton{
+    color: #ffffff;
+    border: 1px solid #000000;
+    font-size: 16px;
+    padding: 8px;
+    border-radius: 5px;
+    background-color: #333;
+    font-weight: bold;
+}
+
+QPushButton#backsidebarButton:hover {
+    background-color: #FFD700;
+    color: black;
 }
 
 
@@ -180,4 +207,12 @@ QPushButton#confirmProfileButton:pressed {
     background-color: #1e7e34; /* เข้มสุดเมื่อกด */
 }
 
+
+/* สไตล์รายการ Dropdown (ที่เด้งออกมา) */
+QComboBox#profileDataField QAbstractItemView {
+    border: 1px solid #ccc;
+    background-color: white;
+    color: black;
+    padding: 4px; /* ระยะห่างขอบในรายการ */
+}
 
