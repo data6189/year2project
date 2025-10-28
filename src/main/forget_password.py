@@ -7,11 +7,14 @@ from PyQt6.QtGui import *
 from PyQt6.QtCore import *
 
 # --- Database Setup ---
-DB_PATH = "src/database/account.db"
+DB_PATH = "src/database/thisshop.db"
 
 def validate_password(username, email, password):
     """Validates the password against complex rules."""
     WEAK_PASSWORDS = ["12345678", "password", "qwerty"]
+    
+    if password in WEAK_PASSWORDS:
+        return "รหัสผ่านง่ายต่อการคาดเดาเกินไป"
     
     if len(password) < 8:
         return False, "รหัสผ่านต้องมีอย่างน้อย 8 ตัวอักษร"
@@ -24,8 +27,6 @@ def validate_password(username, email, password):
     if not re.search(r"[!@#$%^&*]", password):
         return False, "รหัสผ่านต้องมีอักขระพิเศษ (!@#$%^&*) อย่างน้อย 1 ตัว"
     
-    if password in WEAK_PASSWORDS:
-        return "รหัสผ่านง่ายต่อการคาดเดาเกินไป"
     if username.lower() in password.lower():
         return False, "รหัสผ่านห้ามมีชื่อผู้ใช้ (Username) เป็นส่วนประกอบ"
     email_local_part = email.split('@')[0].lower()

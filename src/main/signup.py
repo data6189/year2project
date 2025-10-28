@@ -6,7 +6,7 @@ from PyQt6.QtWidgets import *
 from PyQt6.QtGui import *
 from PyQt6.QtCore import *
 
-DB_NAME = "src/database/account.db"
+DB_NAME = "src/database/thisshop.db"
 conn = sqlite3.connect(DB_NAME)
 
 # === (ADDED) ฟังก์ชันตรวจสอบความถูกต้อง ===
@@ -33,6 +33,9 @@ def validate_password(password, username, email):
     """ตรวจสอบ Password ตามกฎ"""
     WEAK_PASSWORDS = ["12345678", "password", "qwerty"]
     
+    if password in WEAK_PASSWORDS:
+        return "รหัสผ่านง่ายต่อการคาดเดาเกินไป"
+    
     if len(password) < 8:
         return "รหัสผ่านต้องมีอย่างน้อย 8 ตัวอักษร"
     if not re.search(r"[a-z]", password):
@@ -46,12 +49,11 @@ def validate_password(password, username, email):
         
     if username and username.lower() in password.lower():
         return "รหัสผ่านห้ามมีชื่อผู้ใช้ (Username) เป็นส่วนประกอบ"
-        
+
     if email and email.lower().split('@')[0] in password.lower():
         return "รหัสผ่านห้ามมีอีเมล (Email) เป็นส่วนประกอบ"
         
-    if password in WEAK_PASSWORDS:
-        return "รหัสผ่านง่ายต่อการคาดเดาเกินไป"
+    
         
     return None
 

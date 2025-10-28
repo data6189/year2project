@@ -7,7 +7,7 @@ from PyQt6.QtCore import *
 
 # === Database Connection ===
 # (ควรตรวจสอบ path ให้ถูกต้อง)
-DB_PATH = "src/database/account.db" 
+DB_PATH = "src/database/thisshop.db" 
 if not os.path.exists(DB_PATH):
     print(f"Error: Database file not found at {DB_PATH}")
     # อาจจะต้องสร้างไฟล์และตารางเปล่าๆ ถ้าไม่มี
