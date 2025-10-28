@@ -2,18 +2,59 @@ import sys
 import os
 import sqlite3
 import re # สำหรับการตรวจสอบ Regex
+# (ลบ import hashlib ออกแล้ว)
 from PyQt6.QtWidgets import *
 from PyQt6.QtGui import *
 from PyQt6.QtCore import *
 
-DB_NAME = "src/database/account.db"
-conn = sqlite3.connect(DB_NAME)
+# === (ADDED) ส่วนสำหรับจัดการฐานข้อมูล ===
+DB_NAME = "account.db"
+
+# === (REMOVED) ฟังก์ชัน hash_password ถูกลบออกแล้ว ===
+
+def initialize_database():
+    """สร้างไฟล์ database และตาราง users หากยังไม่มี"""
+    conn = sqlite3.connect(DB_NAME)
+    cursor = conn.cursor()
+    
+    # สร้างตาราง users (MODIFIED: profile_img เป็น TEXT)
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS users (
+        user_id INTEGER PRIMARY KEY AUTOINCREMENT,
+        username TEXT NOT_NULL UNIQUE,
+        password TEXT NOT NULL,
+        first_name TEXT,
+        last_name TEXT,
+        gender TEXT,
+        email TEXT NOT NULL UNIQUE,
+        phone TEXT,
+        address TEXT,
+        role TEXT NOT NULL,
+        profile_img TEXT
+    )
+    """)
+    
+    # สร้าง user 'admin' เริ่มต้น (หากยังไม่มี)
+    try:
+        # (MODIFIED: ใส่ "data" ลงไปตรงๆ)
+        cursor.execute("""
+        INSERT OR IGNORE INTO users (username, password, role, email, profile_img) 
+        VALUES (?, ?, ?, ?, ?)
+        """, ("data6189", "data", "admin", "admin@example.com", None))
+        
+        conn.commit()
+        print("Database initialized successfully (Passwords stored as plain text).")
+    except sqlite3.Error as e:
+        print(f"Error initializing database: {e}")
+    finally:
+        conn.close()
 
 # === (ADDED) ฟังก์ชันตรวจสอบความถูกต้อง ===
+
 def validate_username(username):
     """ตรวจสอบ Username ตามกฎ"""
     FORBIDDEN_NAMES = ["admin", "root", "support"]
-    FORBIDDEN_WORDS = ["fuck", "shit", "fogussubmhoo"] # (ตัวอย่างคำหยาบ/คำต้องห้าม)
+    FORBIDDEN_WORDS = ["fuck", "shit", "admin"] # (ตัวอย่างคำหยาบ/คำต้องห้าม)
 
     if not (6 <= len(username) <= 20):
         return "Username ต้องมีความยาว 6-20 ตัวอักษร"
@@ -63,6 +104,8 @@ class SignupPage(QMainWindow):
         super().__init__()
         self.showMaximized()
         
+        self.profile_image_path = None 
+
         # โหลด stylesheet
         self.load_stylesheet("src/styles/signup.qss")
         
@@ -139,16 +182,30 @@ class SignupPage(QMainWindow):
         self.toggle_confirm_action = QAction(self.eye_closed_icon, "Show/Hide Password", self) 
         self.toggle_confirm_action.triggered.connect(self.toggle_confirm_visibility) 
         self.confirm_password.addAction(self.toggle_confirm_action, QLineEdit.ActionPosition.TrailingPosition) 
+
+        # === (ADDED) ส่วนอัปโหลดรูปโปรไฟล์ ===
+        self.upload_label = QLabel("Profile Picture (Optional)", self.bg_label)
+        self.upload_label.setObjectName("uploadLabel") 
+        self.upload_label.setGeometry(550, 670, 150, 30)
+
+        self.upload_btn = QPushButton("Upload Image", self.bg_label)
+        self.upload_btn.setObjectName("uploadBtn")
+        self.upload_btn.setGeometry(710, 670, 120, 30)
+        self.upload_btn.clicked.connect(self.upload_profile_image) 
+
+        self.profile_path_label = QLabel("No file selected", self.bg_label)
+        self.profile_path_label.setObjectName("pathLabel")
+        self.profile_path_label.setGeometry(840, 670, 110, 30)
         
         # === (MODIFIED) ขยับปุ่ม Sign Up และ Back ลงมา ===
         self.signup_btn = QPushButton("SIGN UP", self.bg_label)
         self.signup_btn.setObjectName("signupBtn")
-        self.signup_btn.setGeometry(550, 700, 180, 50) 
+        self.signup_btn.setGeometry(550, 720, 180, 50) 
         self.signup_btn.clicked.connect(self.signup_clicked)
 
         self.back_btn = QPushButton("BACK TO LOGIN", self.bg_label)
         self.back_btn.setObjectName("backBtn")
-        self.back_btn.setGeometry(770, 700, 180, 50) 
+        self.back_btn.setGeometry(770, 720, 180, 50) 
         self.back_btn.clicked.connect(self.back_clicked)
     
     def load_stylesheet(self, filepath):
@@ -188,6 +245,27 @@ class SignupPage(QMainWindow):
         msg.setWindowTitle("Sign Up Failed")
         msg.setText(message)
         msg.exec()
+
+    def upload_profile_image(self):
+        """
+        เปิด QFileDialog เพื่อเลือกไฟล์รูปภาพ
+        และเก็บ Path ไว้ใน self.profile_image_path
+        """
+        filepath, _ = QFileDialog.getOpenFileName(
+            self,
+            "Select Profile Image",
+            "", 
+            "Image Files (*.png *.jpg *.jpeg *.bmp)"
+        )
+        
+        if filepath: 
+            self.profile_image_path = filepath
+            filename = os.path.basename(filepath)
+            self.profile_path_label.setText(filename)
+            print(f"Selected profile image: {filepath}")
+        else:
+            self.profile_image_path = None
+            self.profile_path_label.setText("No file selected")
 
     def signup_clicked(self):
         """ฟังก์ชันเมื่อกด Sign Up (เชื่อมต่อ Database และตรวจสอบ)"""
@@ -241,9 +319,9 @@ class SignupPage(QMainWindow):
             
             # (MODIFIED: ใส่ 'password' (Plain Text) ลงไปตรงๆ)
             cursor.execute("""
-            INSERT INTO users (username, email, password, role) 
-            VALUES (?, ?, ?, ?)
-            """, (username, email, password, role))
+            INSERT INTO users (username, email, password, role, profile_img) 
+            VALUES (?, ?, ?, ?, ?)
+            """, (username, email, password, role, self.profile_image_path))
             
             conn.commit()
             
@@ -254,6 +332,8 @@ class SignupPage(QMainWindow):
             self.email.clear()
             self.password.clear()
             self.confirm_password.clear()
+            self.profile_image_path = None 
+            self.profile_path_label.setText("No file selected")
             
         except sqlite3.Error as e:
             self.show_error_message(f"เกิดข้อผิดพลาดกับฐานข้อมูล: {e}")
@@ -272,6 +352,9 @@ class SignupPage(QMainWindow):
 
 
 if __name__ == "__main__":
+    # (ADDED) เรียกใช้ฟังก์ชันสร้าง DB ก่อนเริ่มแอป
+    initialize_database() 
+    
     app = QApplication(sys.argv)
     window = SignupPage()
     window.show()

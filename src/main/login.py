@@ -1,7 +1,12 @@
 import sys
+import os
+import sqlite3
 from PyQt6.QtWidgets import *
-from PyQt6.QtCore import *
 from PyQt6.QtGui import *
+from PyQt6.QtCore import *
+
+DB_NAME = "src/database/account.db"
+conn = sqlite3.connect(DB_NAME)
 
 # === Import Pages ===
 # 1. Import ForgetPasswordPage
@@ -9,20 +14,44 @@ try:
     from forget_password import ForgetPasswordPage
 except ImportError:
     print("Warning: 'forget_password.py' not found. Using mock class.")
-    
-# 2. Import SignupPage (แก้ไขตามคำขอ)
+    # สร้าง Mock class เปล่าๆ เพื่อให้โค้ดรันได้
+    class ForgetPasswordPage(QFrame):
+        def __init__(self, parent=None):
+            super().__init__(parent)
+            self.setObjectName("forgetPage")
+            # อาจจะเพิ่ม Label ง่ายๆ เพื่อให้รู้ว่าอยู่หน้านี้
+            QLabel("Mock Forget Password Page", self).move(100, 100)
+            self.back_btn = QPushButton("Mock Back", self) # เพิ่มปุ่ม back จำลอง
+            self.back_btn.move(100, 150)
+            
+# 2. Import SignupPage
 try:
     from signup import SignupPage 
     print("Successfully imported SignupPage from signup.py")
 except ImportError:
     print("Error: 'signup.py' not found or SignupPage class not found.")
+    # สร้าง Mock class เปล่าๆ เพื่อให้โค้ดรันได้
+    class SignupPage(QFrame):
+        def __init__(self, parent=None):
+            super().__init__(parent)
+            self.setObjectName("signupPage")
+            # อาจจะเพิ่ม Label ง่ายๆ เพื่อให้รู้ว่าอยู่หน้านี้
+            QLabel("Mock Signup Page", self).move(100, 100)
+            self.back_btn = QPushButton("Mock Back", self) # เพิ่มปุ่ม back จำลอง
+            self.back_btn.move(100, 150)
 
-# === หน้า Login (เหมือนเดิม) ===
-class LoginPage(QFrame): # <-- แก้ไขบรรทัดนี้
-    def __init__(self, parent=None):
+
+# === หน้า Login (แก้ไขตามที่คุยกัน) ===
+class LoginPage(QFrame):
+    # 1. เพิ่ม eye_open_icon และ eye_closed_icon ในพารามิเตอร์
+    def __init__(self, eye_open_icon: QIcon, eye_closed_icon: QIcon, parent=None):
         super().__init__(parent)
         
-        # === โหลด Stylesheet (เหมือนเดิม) ===
+        # 2. เก็บไอคอนที่รับมาไว้ใน self
+        self.eye_open_icon = eye_open_icon
+        self.eye_closed_icon = eye_closed_icon
+        
+        # === โหลด Stylesheet ===
         self.load_stylesheet("src/styles/login.qss")
         self.setObjectName("loginPage")
         
@@ -55,6 +84,12 @@ class LoginPage(QFrame): # <-- แก้ไขบรรทัดนี้
         self.forget_btn.setObjectName("forgetBtn")
         self.forget_btn.setGeometry(630, 560, 260, 50)
 
+        # 3. โค้ดส่วนนี้จะทำงานได้ถูกต้องแล้ว
+        self.password_visible = False 
+        self.toggle_password_action = QAction(self.eye_closed_icon, "Show/Hide Password", self) 
+        self.toggle_password_action.triggered.connect(self.toggle_password_visibility) 
+        self.password.addAction(self.toggle_password_action, QLineEdit.ActionPosition.TrailingPosition) 
+
         self.animate_widgets([
             self.user_label, self.username,
             self.pass_label, self.password,
@@ -70,6 +105,16 @@ class LoginPage(QFrame): # <-- แก้ไขบรรทัดนี้
         except FileNotFoundError:
             print(f"Warning: Stylesheet file '{filepath}' not found")
     
+    def toggle_password_visibility(self):
+        """สลับการแสดงผลรหัสผ่าน"""
+        if not self.password_visible:
+            self.password.setEchoMode(QLineEdit.EchoMode.Normal)
+            self.toggle_password_action.setIcon(self.eye_open_icon)
+            self.password_visible = True
+        else:
+            self.password.setEchoMode(QLineEdit.EchoMode.Password)
+            self.toggle_password_action.setIcon(self.eye_closed_icon)
+            self.password_visible = False
     
     def animate_widgets(self, widgets):
         """ทำ fade-in + slide-up ให้แต่ละ widget"""
@@ -104,32 +149,47 @@ class LoginPage(QFrame): # <-- แก้ไขบรรทัดนี้
             QTimer.singleShot(i * 150, start_animation)
 
 
-# === Main Window (เหมือนเดิม) ===
+# === Main Window (แก้ไขตามที่คุยกัน) ===
 class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
         self.setWindowTitle("Beyond Comics")
         self.showMaximized()
         
+        # === 1. ย้ายโค้ดโหลดไอคอนมาไว้ตรงนี้ (ก่อนสร้าง Page) ===
+        self.eye_open_icon_path = "src/img/icon/angryeye.png"
+        self.eye_closed_icon_path = "src/img/icon/noneye.png"
+        
+        try:
+            self.eye_open_icon = QIcon(self.eye_open_icon_path)
+            self.eye_closed_icon = QIcon(self.eye_closed_icon_path)
+        except Exception as e:
+            print(f"Error loading icons: {e}")
+            self.eye_open_icon = QIcon()  # ใส่ QIcon ว่างๆ ไว้กันแครช
+            self.eye_closed_icon = QIcon() # ใส่ QIcon ว่างๆ ไว้กันแครช
+
+        # === 2. สร้าง Stack ===
         self.stack = QStackedWidget()
         self.setCentralWidget(self.stack)
         
-        # === สร้างและเพิ่มหน้า ===
-        self.login_page = LoginPage()
+        # === 3. ส่งไอคอนเข้าไปใน LoginPage ตอนที่สร้าง ===
+        self.login_page = LoginPage(
+            eye_open_icon=self.eye_open_icon, 
+            eye_closed_icon=self.eye_closed_icon,
+            parent=self
+        )
         self.forget_page = ForgetPasswordPage()
-        self.signup_page = SignupPage() # <-- ตอนนี้จะใช้คลาสจริงจาก signup.py
+        self.signup_page = SignupPage() 
 
         self.stack.addWidget(self.login_page)
         self.stack.addWidget(self.forget_page)
         self.stack.addWidget(self.signup_page) 
 
-        # === เชื่อมปุ่ม ===
+        # === 4. เชื่อมปุ่ม ===
         self.login_page.forget_btn.clicked.connect(self.slide_to_forget)
         self.login_page.signup_btn.clicked.connect(self.slide_to_signup) 
 
-        # --- สำคัญ ---
-        # ตรวจสอบว่าคลาส SignupPage ของคุณมีปุ่มชื่อ 'back_btn' หรือไม่
-        # ถ้ามี โค้ดนี้จะเชื่อมต่อปุ่มนั้นให้
+        # ตรวจสอบว่าคลาส SignupPage มีปุ่มชื่อ 'back_btn' หรือไม่
         if hasattr(self.signup_page, "back_btn"):
             self.signup_page.back_btn.clicked.connect(self.slide_to_login_from_signup)
         else:
@@ -139,10 +199,10 @@ class MainWindow(QMainWindow):
         if hasattr(self.forget_page, "back_btn"):
             self.forget_page.back_btn.clicked.connect(self.slide_to_login_from_forget)
         else:
-             print("Warning: 'ForgetPasswordPage' object has no attribute 'back_btn'.")
+            print("Warning: 'ForgetPasswordPage' object has no attribute 'back_btn'.")
+
 
     # --- (เมธอด slide ทั้งหมดเหมือนเดิม) ---
-
     def slide_to_forget(self):
         self.animate_slide(self.login_page, self.forget_page, "right")
 
@@ -194,4 +254,3 @@ if __name__ == "__main__":
     window = MainWindow()
     window.show()
     sys.exit(app.exec())
-
