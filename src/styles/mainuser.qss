@@ -216,21 +216,15 @@ QComboBox#profileDataField QAbstractItemView {
     padding: 4px; /* ระยะห่างขอบในรายการ */
 }
 
-QFrame#comicCard {
+QPushButton#comicCard {
     background-color: #FFFFFF;
     border: 1px solid #DDDDDD;
     border-radius: 8px;
     padding: 5px;
 }
 
-QFrame#comicCard:hover {
+QPushButton#comicCard:hover {
 border: 1px solid #0078d4; /* ไฮไลท์เมื่อเมาส์ชี้ (สีน้ำเงิน) */
-}
-
-/* รูปภาพ comic */
-QLabel#comicImageLabel {
-    background-color: #EEEEEE;
-    border-radius: 5px;
 }
 
 /* (แก้ไขตามคำขอ) ชื่อเรื่อง (ตัวใหญ่, สีดำ)*/
@@ -247,3 +241,103 @@ QLabel#comicVolume {
     color: #555555;
     padding-bottom: 5px;
 }
+
+
+/* ค้นหาไม่เจอ */
+QLabel#noComicsLabel {
+    font-size: 14px;
+    font-weight: bold;
+    color: #000000;
+    padding-top: 5px;
+}
+
+#detailCover {
+    border: 1px solid #DDDDDD;
+    background-color: white;
+    border-radius: 8px;
+    padding: 5px; /* เว้นขอบด้านในเล็กน้อย */
+}
+
+#detailName {
+    color: #1A1A1A;
+    font-size: 28pt; /* ขนาดใหญ่สำหรับชื่อหลัก */
+    font-weight: 700;
+    padding-bottom: 5px;
+    border-bottom: 2px solid #DDDDDD; /* ขีดเส้นใต้ชื่อ */
+}
+
+/* ----------------------------------------------------------
+   3. รายละเอียด (detail_desc_label - QTextEdit)
+   ---------------------------------------------------------- */
+#detailDescription {
+    background-color: white;
+    border: 1px solid #CCCCCC;
+    border-radius: 5px;
+    padding: 10px;
+    color: #444444;
+    font-size: 11pt;
+    line-height: 1.5; /* ระยะห่างบรรทัด */
+}
+
+/* ปรับ Scrollbar ให้อ่อนลง */
+#detailDescription QScrollBar:vertical {
+    border: none;
+    background: #F0F0F0;
+    width: 10px;
+}
+#detailDescription QScrollBar::handle:vertical {
+    background: #CCCCCC;
+    min-height: 20px;
+    border-radius: 5px;
+}
+#detailDescription QScrollBar::handle:vertical:hover {
+    background: #AAAAAA;
+}
+
+/* ----------------------------------------------------------
+   4. ส่วนข้อมูลฟอร์ม (Form Layout Labels/Fields)
+   ---------------------------------------------------------- */
+
+/* สไตล์สำหรับ Label (หัวข้อ: Volume/Issue, Writer, ID, Stock) */
+QFormLayout QLabel {
+    color: #333333;
+    font-weight: 600;
+    font-size: 10pt;
+    min-height: 25px; /* ทำให้ Label สูงขึ้นเล็กน้อย */
+}
+
+/* สไตล์สำหรับข้อมูล (Fields: N/A, B003..., 1) */
+QFormLayout QLabel[alignment="AlignRight|AlignVCenter"] {
+    color: #555555;
+    font-weight: 400; /* ไม่อยากให้เป็นตัวหนา */
+    font-size: 10pt;
+    min-height: 25px;
+}
+
+/* ----------------------------------------------------------
+   5. ราคาและปุ่ม (Price & Add Cart Button)
+   ---------------------------------------------------------- */
+
+#detailPrice {
+    color: #CC0000; /* สีแดงโดดเด่นสำหรับราคา */
+    font-size: 20pt;
+    font-weight: 700;
+    padding: 10px 0;
+    margin-right: 10px; /* เว้นระยะห่างจากปุ่ม */
+    min-height: 60px; /* ให้สูงเท่าปุ่มเพื่อจัดแนว */
+}
+
+#addToCartButton {
+    background-color: #007BFF; /* สีน้ำเงินหลัก */
+    color: white;
+    font-size: 14pt;
+    font-weight: 700;
+    border-radius: 8px;
+    padding: 5px 15px;
+    min-width: 150px;
+}
+
+#addToCartButton:hover {
+    background-color: #0056b3;
+}
+

@@ -4,9 +4,9 @@ DB_NAME = "src/database/thisshop.db"
 
 # ข้อมูลที่จะเพิ่ม
 new_product = (
-    'BATMAN : DEATH OF THE FAMILY ',
-    r'src\img\cover\batdotf.png',
-    'DC'  # ใช้ r'' (raw string) สำหรับ path
+    'A Righteous Thirst for Vengeance',
+    r'src\img\cover\RighteousThirst01-Digital_Page_01.jpg',
+    'Image Comics'  # ใช้ r'' (raw string) สำหรับ path
 )
 
 # คำสั่ง SQL ที่ใช้ placeholders

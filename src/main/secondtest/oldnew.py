@@ -21,7 +21,7 @@ class MainUserWindow(QMainWindow):
 
         self.is_in_edit_mode = False
 
-        # (เพิ่ม) สถานะสำหรับการกรองและเรียงลำดับ
+        # สถานะสำหรับการกรองและเรียงลำดับ
         self.current_category = "ALL"
         self.current_search_term = ""
         self.current_sort_order = "Newest" # ค่าเริ่มต้นที่แสดงใน QComboBox
@@ -50,32 +50,28 @@ class MainUserWindow(QMainWindow):
         
         self.browse_sidebar = self.create_browse_sidebar()
         self.profile_sidebar = self.create_profile_sidebar()
-        # (!!! ใหม่ !!!) สร้าง sidebar สำหรับหน้ารายละเอียด
         self.detail_sidebar = self.create_detail_sidebar() 
         
-        self.sidebar_stack.addWidget(self.browse_sidebar)   # Index 0
+        self.sidebar_stack.addWidget(self.browse_sidebar)    # Index 0
         self.sidebar_stack.addWidget(self.profile_sidebar)  # Index 1
-        # (!!! ใหม่ !!!) เพิ่ม sidebar ใหม่เข้าไปใน stack
-        self.sidebar_stack.addWidget(self.detail_sidebar)   # Index 2
+        self.sidebar_stack.addWidget(self.detail_sidebar)    # Index 2
         
         self.body_layout.addWidget(self.sidebar_stack) 
 
         self.main_content_stack = QStackedWidget()
         self.browse_page = self.create_browse_page()
         self.profile_page = self.create_profile_page()
-        # (!!! ใหม่ !!!) สร้างหน้าสำหรับรายละเอียดสินค้า
         self.product_detail_page = self.create_product_detail_page() 
 
-        self.main_content_stack.addWidget(self.browse_page)         # Index 0
-        self.main_content_stack.addWidget(self.profile_page)        # Index 1
-        # (!!! ใหม่ !!!) เพิ่มหน้าใหม่เข้าไปใน stack
+        self.main_content_stack.addWidget(self.browse_page)          # Index 0
+        self.main_content_stack.addWidget(self.profile_page)         # Index 1
         self.main_content_stack.addWidget(self.product_detail_page) # Index 2
         
         self.body_layout.addWidget(self.main_content_stack, 1)
 
         self.main_layout.addWidget(self.body_widget, 1)
 
-        # (แก้ไข) ตรวจสอบให้แน่ใจว่าโหลดไฟล์ QSS ที่ถูกต้อง
+        # โหลด QSS และข้อมูลเริ่มต้น
         self.load_stylesheet("src/styles/mainuser.qss")
         self.load_user_profile()
         
@@ -141,31 +137,24 @@ class MainUserWindow(QMainWindow):
         btn_marvel = QPushButton("MARVEL")
         btn_marvel.setObjectName("sidebarButton")
         btn_marvel.setFixedHeight(button_height)
-        # (แก้ไข) เชื่อมต่อปุ่มกับฟังก์ชัน filter_products_by_category
         btn_marvel.clicked.connect(lambda: self.filter_products_by_category("MARVEL")) 
         sidebar_layout.addWidget(btn_marvel)
 
         btn_dc = QPushButton("DC")
         btn_dc.setObjectName("sidebarButton")
         btn_dc.setFixedHeight(button_height)
-        # (แก้ไข) เชื่อมต่อปุ่มกับฟังก์ชัน filter_products_by_category
         btn_dc.clicked.connect(lambda: self.filter_products_by_category("DC"))
         sidebar_layout.addWidget(btn_dc)
 
         btn_image = QPushButton("Image Comics")
         btn_image.setObjectName("sidebarButton")
         btn_image.setFixedHeight(button_height)
-        # (แก้ไข) เชื่อมต่อปุ่มกับฟังก์ชัน filter_products_by_category
-        # (หมายเหตุ) สมมติว่า category ใน DB คือ "Image Comics"
         btn_image.clicked.connect(lambda: self.filter_products_by_category("Image Comics"))
         sidebar_layout.addWidget(btn_image)
-        sidebar_layout.addStretch()
         
-        # (แก้ไข) แก้ไขชื่อตัวแปรปุ่ม 'ALL' จาก btn_image เป็น btn_all
         btn_all = QPushButton("ALL")
         btn_all.setObjectName("sidebarButton")
         btn_all.setFixedHeight(button_height)
-        # (แก้ไข) เชื่อมต่อปุ่มกับฟังก์ชัน filter_products_by_category
         btn_all.clicked.connect(lambda: self.filter_products_by_category("ALL"))
         sidebar_layout.addWidget(btn_all)
         sidebar_layout.addStretch()
@@ -197,7 +186,6 @@ class MainUserWindow(QMainWindow):
         sidebar_layout.addStretch()
         return sidebar_frame
 
-    # (!!! ใหม่ !!!)
     # ฟังก์ชันสำหรับสร้าง Sidebar ของหน้า Detail
     def create_detail_sidebar(self):
         sidebar_frame = QFrame()
@@ -209,11 +197,10 @@ class MainUserWindow(QMainWindow):
 
         button_height = 55
 
-        # ปุ่ม Back (เหมือนในหน้า Profile)
+        # ปุ่ม Back 
         btn_back = QPushButton("Back")
         btn_back.setObjectName("backsidebarButton")
         btn_back.setFixedHeight(button_height)
-        # เชื่อมต่อกับ show_browse_page เพื่อกลับไปหน้า BROWSE
         btn_back.clicked.connect(self.show_browse_page)
         sidebar_layout.addWidget(btn_back)
         
@@ -283,41 +270,36 @@ class MainUserWindow(QMainWindow):
         
         return main_content_frame
 
-    # (ฟังก์ชันใหม่) สำหรับจัดการเมื่อพิมพ์ในช่อง search
+    # ฟังก์ชันสำหรับจัดการเมื่อพิมพ์ในช่อง search
     def on_search_text_changed(self, text):
         self.current_search_term = text.strip()
         self.refresh_comic_grid() # เรียกอัปเดต grid
 
-    # (ฟังก์ชันใหม่) สำหรับจัดการเมื่อกดปุ่ม search
+    # ฟังก์ชันสำหรับจัดการเมื่อกดปุ่ม search
     def on_search_button_clicked(self):
-        # ดึงค่าล่าสุดจาก search_input (เผื่อ)
         self.current_search_term = self.search_input.text().strip()
         self.refresh_comic_grid() # เรียกอัปเดต grid
 
-    # (ฟังก์ชันใหม่) สำหรับจัดการเมื่อเปลี่ยนการเรียงลำดับ
+    # ฟังก์ชันสำหรับจัดการเมื่อเปลี่ยนการเรียงลำดับ
     def on_sort_order_changed(self, sort_text):
         self.current_sort_order = sort_text
         self.refresh_comic_grid() # เรียกอัปเดต grid
 
-    # (ฟังก์ชันแก้ไข) สำหรับการกรอง category
+    # ฟังก์ชันสำหรับการกรอง category
     def filter_products_by_category(self, category):
         print(f"กำลังกรองสำหรับ: {category}")
         if category == "ALL":
             self.browse_label.setText("BROWSE")
         else:
-            # ใช้ .title() หรือ .upper() เพื่อความสวยงาม
             self.browse_label.setText(f"BROWSE - {category.upper()}") 
             
-        # (แก้ไข) อัปเดต state และเรียก refresh
         self.current_category = category
-        # (เพิ่ม) เมื่อเปลี่ยน category, ให้ล้างช่อง search
         self.current_search_term = ""
         self.search_input.setText("") # อัปเดต UI ช่อง search
         
         self.refresh_comic_grid()
 
-    # (!!! อัปเดต !!!)
-    # แก้ไข Query ให้ดึง id และเปลี่ยน QFrame เป็น QPushButton
+    # (อัปเดต) แก้ไข Query ให้ดึง id และเปลี่ยน QFrame เป็น QPushButton
     def refresh_comic_grid(self):
         # 1. ล้าง grid_layout เก่า
         try:
@@ -493,56 +475,45 @@ class MainUserWindow(QMainWindow):
             self.grid_layout.addWidget(error_label, 0, 0)
 
     
-    # (!!! ใหม่ !!!)
     # ฟังก์ชันสร้างหน้า UI สำหรับรายละเอียดสินค้า
     def create_product_detail_page(self):
         detail_frame = QFrame()
         detail_frame.setObjectName("ProductDetailPage")
         
-        # ใช้ Layout หลักเป็น QHBoxLayout เพื่อแบ่งซ้าย (รูป) ขวา (ข้อมูล)
         main_detail_layout = QHBoxLayout(detail_frame)
         main_detail_layout.setContentsMargins(350, 40, 40, 40)
-        main_detail_layout.setSpacing(30)
-        # (!!! แก้ไข !!!) จัดทุกอย่างไปทางขวาใน layout หลัก
+        main_detail_layout.setSpacing(15)
         main_detail_layout.setAlignment(Qt.AlignmentFlag.AlignRight) 
 
         # --- ส่วนด้านซ้าย (รูป) ---
-        # (!!! แก้ไข !!!) (เพิ่ม) addStretch เพื่อดันรูปไปทางขวา
         main_detail_layout.addStretch(1) 
 
         self.detail_cover_label = QLabel("Loading image...")
         self.detail_cover_label.setObjectName("detailCover")
         self.detail_cover_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        # (!!! แก้ไข !!!) ลดขนาดรูปอีก
         self.detail_cover_label.setFixedSize(250, 380) # ขนาดใหม่ที่เล็กลง
-        main_detail_layout.addWidget(self.detail_cover_label, 0, Qt.AlignmentFlag.AlignRight) # จัดรูปไปทางขวา
+        main_detail_layout.addWidget(self.detail_cover_label, 0, Qt.AlignmentFlag.AlignRight) 
 
         # --- ส่วนด้านขวา (ข้อมูล) ---
-        # (!!! แก้ไข !!!) (เพิ่ม) addStretch เพื่อดัน widget ข้อมูลไปทางขวา (ถ้ามีพื้นที่เหลือ)
         main_detail_layout.addStretch(1) 
 
         right_info_widget = QWidget()
-        # (!!! แก้ไข !!!) กำหนดความกว้างของ Widget ข้อมูล
         right_info_widget.setFixedWidth(500) # กำหนดความกว้างของส่วนข้อมูล
         right_info_layout = QVBoxLayout(right_info_widget)
         right_info_layout.setContentsMargins(0, 0, 0, 0)
         right_info_layout.setSpacing(15)
-        # (!!! แก้ไข !!!) จัดชิดขวาในส่วนข้อมูล
         right_info_layout.setAlignment(Qt.AlignmentFlag.AlignTop | Qt.AlignmentFlag.AlignRight) 
 
         # ชื่อเรื่อง
         self.detail_name_label = QLabel("Product Name")
         self.detail_name_label.setObjectName("detailName")
         self.detail_name_label.setWordWrap(True)
-        # (!!! แก้ไข !!!) จัดชื่อชิดขวา
         self.detail_name_label.setAlignment(Qt.AlignmentFlag.AlignRight) 
         right_info_layout.addWidget(self.detail_name_label)
         
         # เส้นคั่น
         line = QFrame()
         line.setFrameShape(QFrame.Shape.HLine)
-        # (!!! แก้ไข !!!)
-        # แก้ไขจาก QFrame.Shape.Sunken เป็น QFrame.Shadow.Sunken
         line.setFrameShadow(QFrame.Shadow.Sunken)
         right_info_layout.addWidget(line)
 
@@ -558,26 +529,22 @@ class MainUserWindow(QMainWindow):
         form_widget = QWidget()
         form_layout = QFormLayout(form_widget)
         form_layout.setSpacing(10)
-        # (!!! แก้ไข !!!) จัด Label ไปทางขวา
         form_layout.setLabelAlignment(Qt.AlignmentFlag.AlignRight) 
-        # (!!! แก้ไข !!!) (เพิ่ม) จัด Field ไปทางขวา
         form_layout.setFormAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter) 
         
         self.detail_volume_label = QLabel("N/A")
         self.detail_writer_label = QLabel("N/A")
         self.detail_rated_label = QLabel("N/A")
-        self.detail_isbn_label = QLabel("N/A") # เราจะยังใช้ตัวแปรนี้ แต่เปลี่ยนชื่อ Label
+        self.detail_isbn_label = QLabel("N/A") 
         self.detail_stock_label = QLabel("N/A")
         
-        # (!!! แก้ไข !!!) (เพิ่ม) จัด Alignment ให้ QLabel เหล่านี้ชิดขวา
         for label in [self.detail_volume_label, self.detail_writer_label, 
-                       self.detail_rated_label, self.detail_isbn_label, self.detail_stock_label]:
+                      self.detail_rated_label, self.detail_isbn_label, self.detail_stock_label]:
             label.setAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
 
         form_layout.addRow(QLabel("Volume/Issue :"), self.detail_volume_label)
         form_layout.addRow(QLabel("Writer :"), self.detail_writer_label)
         form_layout.addRow(QLabel("Rated :"), self.detail_rated_label)
-        # (!!! แก้ไข !!!) เปลี่ยนป้ายชื่อจาก "ISBN :" เป็น "ID :"
         form_layout.addRow(QLabel("ID :"), self.detail_isbn_label)
         form_layout.addRow(QLabel("Stock :"), self.detail_stock_label)
         
@@ -586,7 +553,6 @@ class MainUserWindow(QMainWindow):
         # ราคา
         self.detail_price_label = QLabel("Price : 0.00 Bath")
         self.detail_price_label.setObjectName("detailPrice")
-        # (!!! แก้ไข !!!) จัดชิดขวา
         self.detail_price_label.setAlignment(Qt.AlignmentFlag.AlignRight) 
         right_info_layout.addWidget(self.detail_price_label)
         
@@ -594,20 +560,15 @@ class MainUserWindow(QMainWindow):
         self.detail_add_to_cart_button = QPushButton("Add Cart")
         self.detail_add_to_cart_button.setObjectName("addToCartButton")
         self.detail_add_to_cart_button.setFixedHeight(60)
-        # (ยังไม่ต้องใส่ฟังก์ชัน)
-        # self.detail_add_to_cart_button.clicked.connect(self.add_to_cart_function) 
         right_info_layout.addWidget(self.detail_add_to_cart_button, 0, Qt.AlignmentFlag.AlignRight)
 
         right_info_layout.addStretch() # ดันทุกอย่างขึ้นไปด้านบน
         
-        # (!!! แก้ไข !!!) จัด widget ข้อมูลไปทางขวา
         main_detail_layout.addWidget(right_info_widget, 0, Qt.AlignmentFlag.AlignRight) 
 
         return detail_frame
 
-    # (!!! ใหม่ !!!)
     # ฟังก์ชันสำหรับโหลดข้อมูลสินค้าจาก DB มาแสดง
-    # (!!! แก้ไข !!!) เปลี่ยน product_isbn เป็น product_id และแก้ไขการจัดการ Error
     def load_product_details(self, product_id):
         # รีเซ็ต UI ก่อนโหลดข้อมูลใหม่
         self.detail_name_label.setText("Loading...")
@@ -619,7 +580,7 @@ class MainUserWindow(QMainWindow):
         self.detail_stock_label.setText("N/A")
         self.detail_price_label.setText("Price : N/A")
         
-        # (เพิ่ม) ตั้งค่าพื้นหลังเป็นสีขาวทันที
+        # ตั้งค่าพื้นหลังเป็นสีขาวทันที
         placeholder_pixmap = QPixmap(self.detail_cover_label.size())
         placeholder_pixmap.fill(Qt.GlobalColor.white)
         self.detail_cover_label.setPixmap(placeholder_pixmap)
@@ -631,7 +592,7 @@ class MainUserWindow(QMainWindow):
             conn = sqlite3.connect(DB_PATH)
             cursor = conn.cursor()
             
-            # (!!! แก้ไข !!!) เปลี่ยน isbn เป็น id ทั้งใน SELECT และ WHERE
+            # (แก้ไข) เปลี่ยน isbn เป็น id ทั้งใน SELECT และ WHERE
             cursor.execute("""
                 SELECT name, description, volume_issue, writer, rated, id, stock, price, cover_img 
                 FROM product 
@@ -642,7 +603,7 @@ class MainUserWindow(QMainWindow):
             conn.close()
 
             if product_data:
-                # (!!! แก้ไข !!!) เปลี่ยน isbn เป็น id
+                # (แก้ไข) เปลี่ยน isbn เป็น id
                 (name, description, volume_issue, writer, rated, 
                  id, stock, price, cover_img) = product_data
                 
@@ -652,7 +613,7 @@ class MainUserWindow(QMainWindow):
                 self.detail_volume_label.setText(volume_issue or "N/A")
                 self.detail_writer_label.setText(writer or "N/A")
                 self.detail_rated_label.setText(rated or "N/A")
-                # (!!! แก้ไข !!!) เปลี่ยนเป็น str(id)
+                # (แก้ไข) เปลี่ยนเป็น str(id)
                 self.detail_isbn_label.setText(str(id) if id is not None else "N/A")
                 self.detail_stock_label.setText(str(stock) if stock is not None else "N/A")
                 self.detail_price_label.setText(f"Price : {price:.2f} Bath" if price is not None else "Price : N/A")
@@ -678,10 +639,8 @@ class MainUserWindow(QMainWindow):
                 self.detail_cover_label.setPixmap(scaled_pixmap)
 
             else:
-                # (!!! แก้ไข !!!) ไม่โยน Exception แต่แสดงข้อความแจ้งเตือน
                 self.detail_name_label.setText("Product Not Found")
                 self.detail_desc_label.setText(f"No product with ID '{product_id}' was found in the database.")
-                # ตั้งรูปเป็น placeholder สีขาว
                 pixmap = QPixmap(self.detail_cover_label.size())
                 pixmap.fill(Qt.GlobalColor.white) # พื้นหลังขาว
                 self.detail_cover_label.setPixmap(pixmap)
@@ -689,7 +648,6 @@ class MainUserWindow(QMainWindow):
 
 
         except Exception as e:
-            # (!!! แก้ไข !!!) ไม่โยน Exception แต่แสดงข้อความแจ้งเตือน
             print(f"เกิดข้อผิดพลาดในการโหลดรายละเอียดสินค้า (ID: {product_id}): {e}")
             self.detail_name_label.setText(f"Error Loading Product")
             self.detail_desc_label.setText(f"An error occurred: {e}. Please try again or check the database.")
@@ -698,15 +656,11 @@ class MainUserWindow(QMainWindow):
             self.detail_cover_label.setPixmap(pixmap)
 
 
-    # (!!! ใหม่ !!!)
     # ฟังก์ชันสำหรับสลับไปหน้า Product Detail
-    # (!!! แก้ไข !!!) เปลี่ยน product_isbn เป็น product_id
     def show_product_detail_page(self, product_id):
-        # (!!! แก้ไข !!!) อัปเดตข้อความ Print
         print(f"กำลังแสดงรายละเอียดสำหรับ ID: {product_id}")
         
         # 1. โหลดข้อมูลมาก่อน
-        # (!!! แก้ไข !!!) ส่ง product_id
         self.load_product_details(product_id)
         
         # 2. สลับ Stacked Widgets ไปยัง Index 2 (หน้าที่เราเพิ่มเข้าไปใหม่)
@@ -947,12 +901,13 @@ class MainUserWindow(QMainWindow):
         self.set_profile_fields_read_only(False)
         self.upload_button.setVisible(True)
         self.confirm_button.setVisible(True)
+        self.edit_button.setVisible(False) # ซ่อนปุ่ม Edit
 
     def disable_edit_mode(self):
         self.set_profile_fields_read_only(True)
         self.upload_button.setVisible(False)
         self.confirm_button.setVisible(False)
-        self.edit_button.setVisible(True)
+        self.edit_button.setVisible(True) # แสดงปุ่ม Edit
         self.load_user_profile()
 
     def toggle_edit_mode(self):
@@ -1037,16 +992,14 @@ class MainUserWindow(QMainWindow):
     def show_browse_page(self):
         self.sidebar_stack.setCurrentIndex(0)
         self.main_content_stack.setCurrentIndex(0)
-        # (เพิ่ม) เมื่อกลับมาหน้า browse, ให้รีเซ็ตเป็น "ALL"
-        # และล้างช่อง search
-        # หมายเหตุ: หากคุณต้องการให้จำค่า filter/search เดิม ให้ลบบรรทัดล่างนี้
+        # เมื่อกลับมาหน้า browse, ให้รีเซ็ตเป็น "ALL" และล้างช่อง search
         self.filter_products_by_category("ALL")
 
 
     def handle_logout(self):
         reply = QMessageBox.question(self, 'Logout', 'Are you sure you want to logout?',
-                                        QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
-                                        QMessageBox.StandardButton.No)
+                                         QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+                                         QMessageBox.StandardButton.No)
 
         if reply == QMessageBox.StandardButton.Yes:
             self.logout_requested.emit()
@@ -1054,20 +1007,6 @@ class MainUserWindow(QMainWindow):
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)
-    # (สำคัญ) ตรวจสอบให้แน่ใจว่าตาราง 'product' ใน DB ของคุณ
-    # มีคอลัมน์เหล่านี้ทั้งหมดเพื่อให้โค้ดทำงานได้:
-    # - id (สำหรับระบุสินค้า)
-    # - name (สำหรับ A-Z และ Search)
-    # - category (สำหรับ MARVEL, DC, ...)
-    # - created_at (สำหรับ Newest, Oldest)
-    # - cover_img (สำหรับแสดงปก)
-    # - volume_issue (สำหรับแสดงใน grid)
-    # - description (สำหรับหน้ารายละเอียด)
-    # - writer (สำหรับหน้ารายละเอียด)
-    # - rated (สำหรับหน้ารายละเอียด)
-    # - stock (สำหรับหน้ารายละเอียด)
-    # - price (สำหรับหน้ารายละเอียด)
-    #
     window = MainUserWindow(username="test") 
     window.show()
     sys.exit(app.exec())
