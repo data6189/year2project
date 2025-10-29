@@ -27,7 +27,7 @@ class MainUserWindow(QMainWindow):
         self.current_sort_order = "Newest" # ค่าเริ่มต้นที่แสดงใน QComboBox
 
         self.setWindowTitle(f"Beyond Comics - Welcome {self.current_username}") 
-        self.setGeometry(100, 100, 1920, 1080)
+        #self.showFullScreen()
         self.showMaximized()
 
         self.central_widget = QWidget()
@@ -537,7 +537,7 @@ class MainUserWindow(QMainWindow):
         self.detail_name_label.setObjectName("detailName")
         self.detail_name_label.setWordWrap(True)
         # (!!! แก้ไข !!!) จัดชื่อชิดขวา
-        self.detail_name_label.setAlignment(Qt.AlignmentFlag.AlignRight) 
+        self.detail_name_label.setAlignment(Qt.AlignmentFlag.AlignLeft) 
         right_info_layout.addWidget(self.detail_name_label)
         
         # เส้นคั่น
@@ -553,17 +553,17 @@ class MainUserWindow(QMainWindow):
         self.detail_desc_label.setObjectName("detailDescription")
         self.detail_desc_label.setReadOnly(True)
         self.detail_desc_label.setText("Loading description...")
-        self.detail_desc_label.setFixedHeight(250) # จำกัดความสูง
+        self.detail_desc_label.setFixedHeight(150) # จำกัดความสูง
         right_info_layout.addWidget(self.detail_desc_label)
 
         # ข้อมูลอื่นๆ (ใช้ QFormLayout)
         form_widget = QWidget()
         form_layout = QFormLayout(form_widget)
-        form_layout.setSpacing(10)
+        form_layout.setSpacing(5)
         # (!!! แก้ไข !!!) จัด Label ไปทางขวา
-        form_layout.setLabelAlignment(Qt.AlignmentFlag.AlignRight) 
+        form_layout.setLabelAlignment(Qt.AlignmentFlag.AlignLeft) 
         # (!!! แก้ไข !!!) (เพิ่ม) จัด Field ไปทางขวา
-        form_layout.setFormAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter) 
+        form_layout.setFormAlignment(Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter) 
         
         self.detail_volume_label = QLabel("N/A")
         self.detail_writer_label = QLabel("N/A")
@@ -571,17 +571,35 @@ class MainUserWindow(QMainWindow):
         self.detail_isbn_label = QLabel("N/A") # เราจะยังใช้ตัวแปรนี้ แต่เปลี่ยนชื่อ Label
         self.detail_stock_label = QLabel("N/A")
         
-        # (!!! แก้ไข !!!) (เพิ่ม) จัด Alignment ให้ QLabel เหล่านี้ชิดขวา
         for label in [self.detail_volume_label, self.detail_writer_label, 
-                       self.detail_rated_label, self.detail_isbn_label, self.detail_stock_label]:
-            label.setAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
+                      self.detail_rated_label, self.detail_isbn_label, self.detail_stock_label]:
+            
+            # (!!! เพิ่ม !!!) ตั้งชื่อ Style ให้เหมือนกัน
+            label.setObjectName("detailFormValue") 
+            
+            # (!!! แก้ไข !!!) เปลี่ยนจาก AlignRight เป็น AlignLeft
+            label.setAlignment(Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter)
 
-        form_layout.addRow(QLabel("Volume/Issue :"), self.detail_volume_label)
-        form_layout.addRow(QLabel("Writer :"), self.detail_writer_label)
-        form_layout.addRow(QLabel("Rated :"), self.detail_rated_label)
-        # (!!! แก้ไข !!!) เปลี่ยนป้ายชื่อจาก "ISBN :" เป็น "ID :"
-        form_layout.addRow(QLabel("ID :"), self.detail_isbn_label)
-        form_layout.addRow(QLabel("Stock :"), self.detail_stock_label)
+        form_rows_data = [
+            ("Volume/Issue :", self.detail_volume_label),
+            ("Writer :", self.detail_writer_label),
+            ("Rated :", self.detail_rated_label),
+            ("ISBN :", self.detail_isbn_label), # ใช้ "ID :" ตามโค้ดเดิมของคุณ
+            ("Stock :", self.detail_stock_label)
+        ]
+
+        # วนลูปเพื่อสร้าง Label หัวข้อ, ตั้งชื่อให้มัน, แล้วค่อย addRow
+        for label_text, value_widget in form_rows_data:
+            # สร้าง QLabel สำหรับหัวข้อ
+            label_header = QLabel(label_text)
+            
+            # (!!! สำคัญ !!!) ตั้งชื่อ ObjectName สำหรับ "หัวข้อ"
+            label_header.setObjectName("detailFormLabel") 
+            
+            # Add เข้า Layout
+            form_layout.addRow(label_header, value_widget)
+        
+        right_info_layout.addWidget(form_widget)
         
         right_info_layout.addWidget(form_widget)
         
@@ -593,7 +611,7 @@ class MainUserWindow(QMainWindow):
         right_info_layout.addWidget(self.detail_price_label)
         
         # ปุ่ม Add to Cart
-        self.detail_add_to_cart_button = QPushButton("Add Cart")
+        self.detail_add_to_cart_button = QPushButton("Add to Cart")
         self.detail_add_to_cart_button.setObjectName("addToCartButton")
         self.detail_add_to_cart_button.setFixedHeight(60)
         # (ยังไม่ต้องใส่ฟังก์ชัน)

@@ -225,9 +225,11 @@ class LoginPage(QFrame):
 # === Main Window (แก้ไข) ===
 class MainWindow(QMainWindow):
     def __init__(self):
+        
         super().__init__()
         self.setWindowTitle("Beyond Comics")
-        self.showMaximized()
+        self.showFullScreen()
+        #self.showMaximized()
         
         self.eye_open_icon_path = "src/img/icon/angryeye.png"
         self.eye_closed_icon_path = "src/img/icon/noneye.png"

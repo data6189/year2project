@@ -263,7 +263,7 @@ QLabel#noComicsLabel {
 
 #detailName {
     color: #1A1A1A;
-    font-size: 28pt; /* ขนาดใหญ่สำหรับชื่อหลัก */
+    font-size: 20pt; /* ขนาดใหญ่สำหรับชื่อหลัก */
     font-weight: 700;
     padding-bottom: 5px;
     border-bottom: 2px solid #DDDDDD; /* ขีดเส้นใต้ชื่อ */
@@ -297,37 +297,18 @@ QLabel#noComicsLabel {
     background: #AAAAAA;
 }
 
-/* ----------------------------------------------------------
-   4. ส่วนข้อมูลฟอร์ม (Form Layout Labels/Fields)
-   ---------------------------------------------------------- */
-
-/* สไตล์สำหรับ Label (หัวข้อ: Volume/Issue, Writer, ID, Stock) */
-QFormLayout QLabel {
-    color: #333333;
-    font-weight: 600;
-    font-size: 10pt;
-    min-height: 25px; /* ทำให้ Label สูงขึ้นเล็กน้อย */
-}
-
-/* สไตล์สำหรับข้อมูล (Fields: N/A, B003..., 1) */
-QFormLayout QLabel[alignment="AlignRight|AlignVCenter"] {
-    color: #555555;
-    font-weight: 400; /* ไม่อยากให้เป็นตัวหนา */
-    font-size: 10pt;
-    min-height: 25px;
-}
 
 /* ----------------------------------------------------------
    5. ราคาและปุ่ม (Price & Add Cart Button)
    ---------------------------------------------------------- */
 
 #detailPrice {
-    color: #CC0000; /* สีแดงโดดเด่นสำหรับราคา */
-    font-size: 20pt;
+    color: #000000; /* สีแดงโดดเด่นสำหรับราคา */
+    font-size: 16pt;
     font-weight: 700;
     padding: 10px 0;
     margin-right: 10px; /* เว้นระยะห่างจากปุ่ม */
-    min-height: 60px; /* ให้สูงเท่าปุ่มเพื่อจัดแนว */
+    min-height: 30px; /* ให้สูงเท่าปุ่มเพื่อจัดแนว */
 }
 
 #addToCartButton {
@@ -342,5 +323,18 @@ QFormLayout QLabel[alignment="AlignRight|AlignVCenter"] {
 
 #addToCartButton:hover {
     background-color: #0056b3;
+}
+
+QLabel#detailFormLabel {
+    color: #000000; /* สีเทาเข้ม (ตัวอย่าง) */
+    font-weight: bold;
+    font-size: 14px;
+    padding-right: 10px; /* เพิ่มช่องว่างระหว่าง : กับ ค่า (ตัวอย่าง) */
+}
+
+QLabel#detailFormValue {
+    color: #000000;
+    font-weight: bold;
+    font-size: 14px; /* คุณสามารถปรับขนาดได้ตามต้องการ */
 }
 
