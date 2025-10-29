@@ -216,3 +216,34 @@ QComboBox#profileDataField QAbstractItemView {
     padding: 4px; /* ระยะห่างขอบในรายการ */
 }
 
+QFrame#comicCard {
+    background-color: #FFFFFF;
+    border: 1px solid #DDDDDD;
+    border-radius: 8px;
+    padding: 5px;
+}
+
+QFrame#comicCard:hover {
+border: 1px solid #0078d4; /* ไฮไลท์เมื่อเมาส์ชี้ (สีน้ำเงิน) */
+}
+
+/* รูปภาพ comic */
+QLabel#comicImageLabel {
+    background-color: #EEEEEE;
+    border-radius: 5px;
+}
+
+/* (แก้ไขตามคำขอ) ชื่อเรื่อง (ตัวใหญ่, สีดำ)*/
+QLabel#comicName {
+    font-size: 14px;
+    font-weight: bold;
+    color: #000000;
+    padding-top: 5px;
+}
+
+/* เล่มที่ (ตัวเล็ก, สีเทาเข้ม) */
+QLabel#comicVolume {
+    font-size: 12px;
+    color: #555555;
+    padding-bottom: 5px;
+}

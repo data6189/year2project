@@ -21,6 +21,11 @@ class MainUserWindow(QMainWindow):
 
         self.is_in_edit_mode = False
 
+        # (เพิ่ม) สถานะสำหรับการกรองและเรียงลำดับ
+        self.current_category = "ALL"
+        self.current_search_term = ""
+        self.current_sort_order = "Newest" # ค่าเริ่มต้นที่แสดงใน QComboBox
+
         self.setWindowTitle(f"Beyond Comics - Welcome {self.current_username}") 
         self.setGeometry(100, 100, 1920, 1080)
         self.showMaximized()
@@ -128,27 +133,33 @@ class MainUserWindow(QMainWindow):
         btn_marvel = QPushButton("MARVEL")
         btn_marvel.setObjectName("sidebarButton")
         btn_marvel.setFixedHeight(button_height)
-        btn_marvel.clicked.connect(self.show_browse_page) 
+        # (แก้ไข) เชื่อมต่อปุ่มกับฟังก์ชัน filter_products_by_category
+        btn_marvel.clicked.connect(lambda: self.filter_products_by_category("MARVEL")) 
         sidebar_layout.addWidget(btn_marvel)
 
         btn_dc = QPushButton("DC")
         btn_dc.setObjectName("sidebarButton")
         btn_dc.setFixedHeight(button_height)
-        btn_dc.clicked.connect(self.show_browse_page)
+        # (แก้ไข) เชื่อมต่อปุ่มกับฟังก์ชัน filter_products_by_category
+        btn_dc.clicked.connect(lambda: self.filter_products_by_category("DC"))
         sidebar_layout.addWidget(btn_dc)
 
         btn_image = QPushButton("Image Comics")
         btn_image.setObjectName("sidebarButton")
         btn_image.setFixedHeight(button_height)
-        btn_image.clicked.connect(self.show_browse_page)
+        # (แก้ไข) เชื่อมต่อปุ่มกับฟังก์ชัน filter_products_by_category
+        # (หมายเหตุ) สมมติว่า category ใน DB คือ "Image Comics"
+        btn_image.clicked.connect(lambda: self.filter_products_by_category("Image Comics"))
         sidebar_layout.addWidget(btn_image)
         sidebar_layout.addStretch()
         
-        btn_image = QPushButton("ALL")
-        btn_image.setObjectName("sidebarButton")
-        btn_image.setFixedHeight(button_height)
-        btn_image.clicked.connect(self.show_browse_page)
-        sidebar_layout.addWidget(btn_image)
+        # (แก้ไข) แก้ไขชื่อตัวแปรปุ่ม 'ALL' จาก btn_image เป็น btn_all
+        btn_all = QPushButton("ALL")
+        btn_all.setObjectName("sidebarButton")
+        btn_all.setFixedHeight(button_height)
+        # (แก้ไข) เชื่อมต่อปุ่มกับฟังก์ชัน filter_products_by_category
+        btn_all.clicked.connect(lambda: self.filter_products_by_category("ALL"))
+        sidebar_layout.addWidget(btn_all)
         sidebar_layout.addStretch()
         
         return sidebar_frame
@@ -186,29 +197,45 @@ class MainUserWindow(QMainWindow):
         main_layout.setContentsMargins(300, 20, 20, 20)
 
         browse_header_layout = QHBoxLayout()
-        browse_label = QLabel("BROWSE")
-        browse_label.setObjectName("browseLabel")
-        browse_header_layout.addWidget(browse_label)
+        # (แก้ไข) เปลี่ยน browse_label เป็น self.browse_label เพื่อให้เข้าถึงได้จากฟังก์ชันอื่น
+        self.browse_label = QLabel("BROWSE")
+        self.browse_label.setObjectName("browseLabel")
+        browse_header_layout.addWidget(self.browse_label)
         browse_header_layout.addStretch()
-        sort_combo = QComboBox()
-        sort_combo.setObjectName("sortCombo")
-        sort_combo.addItems(["Newest", "Oldest", "A-Z"])
-        sort_combo.setFixedHeight(35)
-        browse_header_layout.addWidget(sort_combo)
+        
+        # (แก้ไข) เก็บ QComboBox ไว้ใน self.sort_combo
+        self.sort_combo = QComboBox()
+        self.sort_combo.setObjectName("sortCombo")
+        self.sort_combo.addItems(["Newest", "Oldest", "A-Z"])
+        self.sort_combo.setFixedHeight(35)
+        # (เพิ่ม) เชื่อมต่อ signal เมื่อค่าเปลี่ยน
+        self.sort_combo.currentTextChanged.connect(self.on_sort_order_changed)
+        browse_header_layout.addWidget(self.sort_combo)
+        
         main_layout.addLayout(browse_header_layout)
         search_layout = QHBoxLayout()
         search_layout.setContentsMargins(0, 0, 0, 0)
         search_layout.setSpacing(10)
-        search_input = QLineEdit()
-        search_input.setObjectName("searchBox")
-        search_input.setPlaceholderText("Search comics...")
-        search_input.setFixedHeight(40)
-        search_button = QPushButton("Search")
-        search_button.setObjectName("searchButton")
-        search_button.setFixedHeight(40)
-        search_layout.addWidget(search_input, stretch=1)
-        search_layout.addWidget(search_button)
+        
+        # (แก้ไข) เก็บ QLineEdit ไว้ใน self.search_input
+        self.search_input = QLineEdit()
+        self.search_input.setObjectName("searchBox")
+        self.search_input.setPlaceholderText("Search comics...")
+        self.search_input.setFixedHeight(40)
+        # (เพิ่ม) เชื่อมต่อ signal เมื่อข้อความเปลี่ยน (real-time search)
+        self.search_input.textChanged.connect(self.on_search_text_changed)
+        
+        # (แก้ไข) เก็บ QPushButton ไว้ใน self.search_button
+        self.search_button = QPushButton("Search")
+        self.search_button.setObjectName("searchButton")
+        self.search_button.setFixedHeight(40)
+        # (เพิ่ม) เชื่อมต่อ signal เผื่อผู้ใช้กดปุ่ม
+        self.search_button.clicked.connect(self.on_search_button_clicked)
+        
+        search_layout.addWidget(self.search_input, stretch=1)
+        search_layout.addWidget(self.search_button)
         main_layout.addLayout(search_layout)
+        
         scroll_area = QScrollArea()
         scroll_area.setObjectName("scrollArea")
         scroll_area.setWidgetResizable(True)
@@ -217,22 +244,208 @@ class MainUserWindow(QMainWindow):
         scroll_area.setFrameShape(QFrame.Shape.NoFrame)
         scroll_content_widget = QWidget()
         scroll_content_widget.setObjectName("scrollContent")
+        
         self.grid_layout = QGridLayout(scroll_content_widget)
         self.grid_layout.setSpacing(20)
         self.grid_layout.setContentsMargins(20, 20, 20, 20)
-        for i in range(20):
-            row = i // 4
-            col = i % 4
-            comic_placeholder = QLabel(f"Comic Book {i+1}\n[Image Here]")
-            comic_placeholder.setObjectName("comicPlaceholder")
-            comic_placeholder.setAlignment(Qt.AlignmentFlag.AlignCenter)
-            comic_placeholder.setFixedSize(200, 300)
-            self.grid_layout.addWidget(comic_placeholder, row, col)
+        
+        # (แก้ไข) เรียกใช้ self.refresh_comic_grid() แทน
+        # มันจะใช้ค่า state เริ่มต้น (ALL, "", "Newest")
+        self.refresh_comic_grid()
+        
         scroll_area.setWidget(scroll_content_widget)
         main_layout.addWidget(scroll_area, stretch=1)
         
         return main_content_frame
 
+    # (ฟังก์ชันใหม่) สำหรับจัดการเมื่อพิมพ์ในช่อง search
+    def on_search_text_changed(self, text):
+        self.current_search_term = text.strip()
+        self.refresh_comic_grid() # เรียกอัปเดต grid
+
+    # (ฟังก์ชันใหม่) สำหรับจัดการเมื่อกดปุ่ม search
+    def on_search_button_clicked(self):
+        # ดึงค่าล่าสุดจาก search_input (เผื่อ)
+        self.current_search_term = self.search_input.text().strip()
+        self.refresh_comic_grid() # เรียกอัปเดต grid
+
+    # (ฟังก์ชันใหม่) สำหรับจัดการเมื่อเปลี่ยนการเรียงลำดับ
+    def on_sort_order_changed(self, sort_text):
+        self.current_sort_order = sort_text
+        self.refresh_comic_grid() # เรียกอัปเดต grid
+
+    # (ฟังก์ชันแก้ไข) สำหรับการกรอง category
+    def filter_products_by_category(self, category):
+        print(f"กำลังกรองสำหรับ: {category}")
+        if category == "ALL":
+            self.browse_label.setText("BROWSE")
+        else:
+            # ใช้ .title() หรือ .upper() เพื่อความสวยงาม
+            self.browse_label.setText(f"BROWSE - {category.upper()}") 
+            
+        # (แก้ไข) อัปเดต state และเรียก refresh
+        self.current_category = category
+        # (เพิ่ม) เมื่อเปลี่ยน category, ให้ล้างช่อง search
+        self.current_search_term = ""
+        self.search_input.setText("") # อัปเดต UI ช่อง search
+        
+        self.refresh_comic_grid()
+
+    # (ฟังก์ชันแก้ไข) เปลี่ยนชื่อจาก populate_comic_grid เป็น refresh_comic_grid
+    # และแก้ไขให้ดึงข้อมูลตาม state ทั้งหมด (category, search, sort)
+    def refresh_comic_grid(self):
+        # 1. ล้าง grid_layout เก่า
+        try:
+            while self.grid_layout.count():
+                item = self.grid_layout.takeAt(0)
+                widget = item.widget()
+                if widget is not None:
+                    widget.deleteLater()
+        except Exception as e:
+            print(f"เกิดข้อผิดพลาดขณะล้าง grid: {e}")
+
+        # 2. ดึงข้อมูลใหม่ตาม state
+        try:
+            if not os.path.exists(DB_PATH):
+                print(f"ข้อผิดพลาด: ไม่พบไฟล์ DB ที่: {DB_PATH}")
+                error_label = QLabel(f"Error: Database not found at\n{DB_PATH}")
+                error_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+                self.grid_layout.addWidget(error_label, 0, 0)
+                return # ออกจากฟังก์ชันถ้าไม่พบ DB
+
+            conn = sqlite3.connect(DB_PATH)
+            cursor = conn.cursor()
+            
+            # (แก้ไข) สร้าง query และ params แบบ dynamic
+            # (สำคัญ) ตาราง product ต้องมีคอลัมน์ category, name, และ created_at
+            base_query = "SELECT name, cover_img, volume_issue FROM product"
+            where_clauses = []
+            params = []
+
+            # 2.1 เพิ่ม Category filter
+            if self.current_category != "ALL":
+                where_clauses.append("category = ?")
+                params.append(self.current_category)
+            
+            # 2.2 เพิ่ม Search filter (ค้นหาจาก 'name')
+            if self.current_search_term:
+                # ใช้ LIKE 'b%' เพื่อหา "batman" เมื่อพิมพ์ "b"
+                where_clauses.append("name LIKE ?")
+                params.append(f"{self.current_search_term}%")
+
+            # 2.3 รวม WHERE clauses
+            if where_clauses:
+                base_query += " WHERE " + " AND ".join(where_clauses)
+                
+            # 2.4 เพิ่ม Sort order
+            if self.current_sort_order == "Newest":
+                base_query += " ORDER BY created_at DESC"
+            elif self.current_sort_order == "Oldest":
+                base_query += " ORDER BY created_at ASC"
+            elif self.current_sort_order == "A-Z":
+                base_query += " ORDER BY name ASC"
+                
+            # Debugging: พิมพ์ query ที่จะรัน
+            print(f"Executing Query: {base_query} with params: {tuple(params)}")
+
+            cursor.execute(base_query, tuple(params))
+            products = cursor.fetchall()
+            conn.close()
+
+            # 3. แสดงผลข้อมูล
+            if not products:
+                no_comics_label = QLabel(f"No comics found.")
+                no_comics_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+                self.grid_layout.addWidget(no_comics_label, 0, 0)
+            
+            else:
+                card_width = 200
+                card_height = 340 
+                image_height = 250
+                name_height = 35
+                volume_height = 25
+                
+                num_columns = 4 
+
+                for i, (name, cover_img_path, volume_issue) in enumerate(products):
+                    row = i // num_columns
+                    col = i % num_columns
+
+                    comic_card = QFrame()
+                    comic_card.setObjectName("comicCard")
+                    comic_card.setFixedSize(card_width, card_height)
+                    card_layout = QVBoxLayout(comic_card)
+                    card_layout.setContentsMargins(0, 5, 5, 5) 
+                    card_layout.setSpacing(5) 
+
+                    card_layout.addStretch(1) 
+
+                    image_label = QLabel()
+                    image_label.setObjectName("comicImage")
+                    image_label.setAlignment(Qt.AlignmentFlag.AlignCenter) 
+                    image_label.setFixedSize(card_width - 10, image_height) 
+                    
+                    pixmap = None
+                    if cover_img_path and os.path.exists(cover_img_path):
+                        pixmap = QPixmap(cover_img_path)
+                    else:
+                        print(f"คำเตือน: ไม่พบรูป comic '{cover_img_path}' สำหรับ '{name}'. ใช้ placeholder")
+                        pixmap = QPixmap("src/img/icon/profile.png") 
+                        if pixmap.isNull():
+                            pixmap = QPixmap(card_width - 10, image_height)
+                            pixmap.fill(Qt.GlobalColor.gray)
+                    
+                    scaled_pixmap = pixmap.scaled(
+                        image_label.size(), 
+                        Qt.AspectRatioMode.KeepAspectRatio, 
+                        Qt.TransformationMode.SmoothTransformation
+                    )
+                    image_label.setPixmap(scaled_pixmap)
+                    
+                    card_layout.addWidget(image_label)
+                    card_layout.addSpacing(10) # ช่องว่าง 10px ระหว่างรูปภาพกับชื่อ
+
+                    name_label = QLabel(name)
+                    name_label.setObjectName("comicName")
+                    name_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+                    name_label.setWordWrap(True)
+                    name_label.setFixedHeight(name_height)
+
+                    volume_text = volume_issue if volume_issue else "N/A"
+                    volume_label = QLabel(volume_text)
+                    volume_label.setObjectName("comicVolume")
+                    volume_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+                    volume_label.setFixedHeight(volume_height)
+
+                    card_layout.addWidget(name_label)
+                    card_layout.addWidget(volume_label)
+                    
+                    card_layout.addStretch(1) 
+                    
+                    self.grid_layout.addWidget(comic_card, row, col, Qt.AlignmentFlag.AlignTop)
+
+                self.grid_layout.setRowStretch(len(products) // num_columns + 1, 1)
+                self.grid_layout.setColumnStretch(num_columns, 1)
+
+        except sqlite3.OperationalError as e:
+            print(f"เกิดข้อผิดพลาด SQL: {e}")
+            error_text = f"Error executing query: {e}\n"
+            if "no such column: created_at" in str(e):
+                error_text += "Please ensure the 'product' table has a 'created_at' column."
+            elif "no such column: category" in str(e):
+                error_text += "Please ensure the 'product' table has a 'category' column."
+            
+            error_label = QLabel(error_text)
+            error_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+            self.grid_layout.addWidget(error_label, 0, 0)
+            
+        except Exception as e:
+            print(f"เกิดข้อผิดพลาดในการโหลด comics: {e}")
+            error_label = QLabel(f"Error loading comics:\n{e}")
+            error_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+            self.grid_layout.addWidget(error_label, 0, 0)
+
+        
     def create_profile_page(self):
         profile_frame = QFrame()
         profile_frame.setObjectName("ProfilePage") 
@@ -254,7 +467,6 @@ class MainUserWindow(QMainWindow):
 
         self.profile_pic_label = QLabel()
         self.profile_pic_label.setObjectName("profilePicLabel")
-        # --- ขนาดของ Label รูปโปรไฟล์ (ปรับเป็น 250x250) ---
         self.profile_pic_label.setFixedSize(250, 250) 
         
         self.upload_button = QPushButton(" Upload Profile image")
@@ -356,9 +568,6 @@ class MainUserWindow(QMainWindow):
 
         return profile_frame
 
-    # --- (แก้ไข) ---
-    # เปลี่ยนชื่อจาก create_circular_pixmap เป็น create_scaled_pixmap
-    # และลบโค้ดส่วนที่ทำให้เป็นวงกลม (QPainter, QPainterPath)
     def create_scaled_pixmap(self, image_path, size):
         """
         สร้าง QPixmap สี่เหลี่ยมที่สเกลแล้วจาก image_path ที่กำหนด
@@ -366,11 +575,9 @@ class MainUserWindow(QMainWindow):
         try:
             source_pixmap = QPixmap(image_path)
             if source_pixmap.isNull():
-                # ถ้า path ไม่ถูกต้อง หรือไฟล์เสียหาย ให้ใช้รูป default
                 print(f"คำเตือน: ไม่พบไฟล์รูปภาพที่ '{image_path}', ใช้รูปโปรไฟล์เริ่มต้น")
                 source_pixmap = QPixmap("src/img/icon/profile.png")
                 if source_pixmap.isNull():
-                        # ถ้าไฟล์ default ก็ไม่มี ให้สร้าง pixmap สีเทาขึ้นมาแทน
                     print("คำเตือน: ไม่พบรูปโปรไฟล์เริ่มต้น 'src/img/icon/profile.png'")
                     source_pixmap = QPixmap(size, size)
                     source_pixmap.fill(Qt.GlobalColor.gray)
@@ -380,28 +587,22 @@ class MainUserWindow(QMainWindow):
             source_pixmap = QPixmap(size, size)
             source_pixmap.fill(Qt.GlobalColor.gray)
 
-        # 1. สเกลภาพให้เป็นสี่เหลี่ยมจัตุรัสขนาดที่กำหนด
-        # (ใช้ IgnoreAspectRatio เพื่อบังคับให้ภาพพอดีกับกรอบ 250x250)
         scaled_pixmap = source_pixmap.scaled(
             size, size, 
             Qt.AspectRatioMode.IgnoreAspectRatio, 
             Qt.TransformationMode.SmoothTransformation
         )
-
-        # 8. คืนค่า pixmap ที่สเกลแล้ว
         return scaled_pixmap
-    # --- (สิ้นสุดการแก้ไข) ---
 
     def load_user_profile(self):
         try:
-            target_size = 250 # ขนาดที่ตรงกับ QLabel (250x250)
+            target_size = 250
             
             if not os.path.exists(DB_PATH):
                 print(f"ข้อผิดพลาด: ไม่พบไฟล์ DB ขณะโหลดโปรไฟล์: {DB_PATH}")
                 self.profile_username_field.setText(self.current_username)
                 self.profile_fname_field.setText("N/A (DB not found)")
                 
-                # --- (แก้ไข) เรียกใช้ create_scaled_pixmap ---
                 default_pixmap = self.create_scaled_pixmap("src/img/icon/profile.png", target_size)
                 self.profile_pic_label.setPixmap(default_pixmap)
                 return
@@ -441,7 +642,6 @@ class MainUserWindow(QMainWindow):
                 self.current_profile_img_path = img_path
                 self.new_profile_img_path = None
 
-                # --- (แก้ไข) เรียกใช้ create_scaled_pixmap ---
                 image_path_to_load = img_path if (img_path and os.path.exists(img_path)) else "src/img/icon/profile.png"
                 scaled_pixmap = self.create_scaled_pixmap(image_path_to_load, target_size)
                 self.profile_pic_label.setPixmap(scaled_pixmap)
@@ -453,7 +653,6 @@ class MainUserWindow(QMainWindow):
                 self.profile_lname_field.setText("N/A")
                 self.profile_gender_field.setCurrentIndex(0)
                 
-                # --- (แก้ไข) เรียกใช้ create_scaled_pixmap ---
                 default_pixmap = self.create_scaled_pixmap("src/img/icon/profile.png", target_size)
                 self.profile_pic_label.setPixmap(default_pixmap)
 
@@ -509,8 +708,7 @@ class MainUserWindow(QMainWindow):
         if file_path:
             self.new_profile_img_path = os.path.normpath(file_path)
             
-            # --- (แก้ไข) เรียกใช้ create_scaled_pixmap ---
-            target_size = 250 # ขนาดที่ตรงกับ QLabel (250x250)
+            target_size = 250
             scaled_pixmap = self.create_scaled_pixmap(self.new_profile_img_path, target_size)
             self.profile_pic_label.setPixmap(scaled_pixmap)
             
@@ -571,6 +769,10 @@ class MainUserWindow(QMainWindow):
     def show_browse_page(self):
         self.sidebar_stack.setCurrentIndex(0)
         self.main_content_stack.setCurrentIndex(0)
+        # (เพิ่ม) เมื่อกลับมาหน้า browse, ให้รีเซ็ตเป็น "ALL"
+        # และล้างช่อง search
+        self.filter_products_by_category("ALL")
+
 
     def handle_logout(self):
         reply = QMessageBox.question(self, 'Logout', 'Are you sure you want to logout?',
@@ -583,6 +785,11 @@ class MainUserWindow(QMainWindow):
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)
-    window = MainUserWindow(username="test")
+    # (สำคัญ) ตรวจสอบให้แน่ใจว่าตาราง product ใน DB ของคุณ
+    # มีคอลัมน์ 'category' (สำหรับ MARVEL, DC, ...)
+    # มีคอลัมน์ 'name' (สำหรับ A-Z และ Search)
+    # มีคอลัมน์ 'created_at' (สำหรับ Newest, Oldest)
+    # เพื่อให้การกรองและเรียงลำดับทำงานได้
+    window = MainUserWindow(username="test") 
     window.show()
     sys.exit(app.exec())

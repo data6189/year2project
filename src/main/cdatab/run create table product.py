@@ -17,7 +17,9 @@ def initialize_database():
     description TEXT,
     price REAL DEFAULT 0.0,
     stock INTEGER DEFAULT 0,
-    cover_img TEXT
+    cover_img TEXT,
+    category TEXT,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
     );
     """)
     

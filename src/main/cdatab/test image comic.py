@@ -4,25 +4,17 @@ DB_NAME = "src/database/thisshop.db"
 
 # ข้อมูลที่จะเพิ่ม
 new_product = (
-    'B003PMU5K0',
-    'Batman Vol.1',
-    '#700',
-    'Grant Morrison',
-    'Default',
-    "Grant Morrison returns to BATMAN with this oversized special! And he's brought an all-star roster of artists along with him including Andy Kubert, Tony Daniel and Frank Quitely to celebrate this milestone 700th issue featuring stories spotlighting each of the Batmen from different eras – Bruce Wayne, Dick Grayson and Damian Wayne. You won't want to miss this blockbuster story that paves the way for the return of Bruce Wayne and sports mind-boggling covers by superstars David Finch (BRIGHTEST DAY) and Mike Mignola (BATMAN: GOTHAM BY GASLIGHT, Hellboy)!",
-    587.73,
-    1,
-    r'src\img\cover\batman700.png', # ใช้ r'' (raw string) สำหรับ path
-    'DC'
+    'A Thing Called Truth',
+    r'src\img\cover\AThingCalledTruth_01_Page_01.jpg',
+    'IMAGE'  # ใช้ r'' (raw string) สำหรับ path
 )
 
 # คำสั่ง SQL ที่ใช้ placeholders
 sql_command = """
 INSERT INTO product (
-    id, name, volume_issue, writer, rated, 
-    description, price, stock, cover_img, category
+    name, cover_img, category
 ) 
-VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+VALUES (?, ?, ?);
 """
 
 try:

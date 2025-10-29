@@ -4,16 +4,16 @@ DB_NAME = "src/database/thisshop.db"
 
 # ข้อมูลที่จะเพิ่ม
 new_product = (
-    'B003PMU5K0',
-    'Batman Vol.1',
-    '#700',
-    'Grant Morrison',
-    'Default',
-    "Grant Morrison returns to BATMAN with this oversized special! And he's brought an all-star roster of artists along with him including Andy Kubert, Tony Daniel and Frank Quitely to celebrate this milestone 700th issue featuring stories spotlighting each of the Batmen from different eras – Bruce Wayne, Dick Grayson and Damian Wayne. You won't want to miss this blockbuster story that paves the way for the return of Bruce Wayne and sports mind-boggling covers by superstars David Finch (BRIGHTEST DAY) and Mike Mignola (BATMAN: GOTHAM BY GASLIGHT, Hellboy)!",
-    587.73,
-    1,
-    r'src\img\cover\batman700.png', # ใช้ r'' (raw string) สำหรับ path
-    'DC'
+    '9781401246020',
+    'BATMAN : DEATH OF THE FAMILY ',
+    'VOL.3',
+    'James T Tynion IV, Scott Snyder',
+    'Teen',
+    "After having his face sliced off, The Joker makes his horrifying return to Gotham City in this epic from issues #13-17 that shook Batman to his core! But even for a man who's committed a lifetime of murder, he's more dangerous than ever before. How can Batman protect his city and those he's closest to?",
+    613.00,
+    10,
+    r'src\img\cover\batdotf.png',
+    'DC'  # ใช้ r'' (raw string) สำหรับ path
 )
 
 # คำสั่ง SQL ที่ใช้ placeholders
