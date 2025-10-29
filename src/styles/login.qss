@@ -53,6 +53,6 @@ QPushButton#signupBtn {
     font-weight: bold;
 }
 
-QPushButton#forgetBtn {
+QPushButton#forgotBtn {
     font-size: 14px;
 }

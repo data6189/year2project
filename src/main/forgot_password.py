@@ -36,7 +36,7 @@ def validate_password(username, email, password):
     return True, "Success"
 
 # --- Main Application Class ---
-class ForgetPasswordPage(QMainWindow):
+class ForgotPasswordPage(QMainWindow):
     def __init__(self):
         super().__init__()
         self.showMaximized()
@@ -47,7 +47,7 @@ class ForgetPasswordPage(QMainWindow):
             QMessageBox.critical(self, "Database Error", f"Could not connect to database: {e}")
             sys.exit(1)
 
-        self.load_stylesheet("src/styles/forget_password.qss")
+        self.load_stylesheet("src/styles/forgot_password.qss")
 
         # === ตั้งค่าภาพพื้นหลัง ===
         self.bg_label = QLabel(self)
@@ -311,7 +311,7 @@ class ForgetPasswordPage(QMainWindow):
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
-    window = ForgetPasswordPage()
+    window = ForgotPasswordPage()
     window.show()
     sys.exit(app.exec())
 

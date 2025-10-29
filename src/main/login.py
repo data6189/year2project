@@ -14,14 +14,17 @@ conn = sqlite3.connect(DB_PATH)
 
 # === Import Pages ===
 try:
-    from forget_password import ForgetPasswordPage
+    # (แก้ไข) เปลี่ยนชื่อคลาสที่ import
+    from forgot_password import ForgotPasswordPage 
 except ImportError:
-    print("Warning: 'forget_password.py' not found. Using mock class.")
-    class ForgetPasswordPage(QFrame):
+    print("Warning: 'forgot_password.py' not found. Using mock class.")
+    # (แก้ไข) เปลี่ยนชื่อ mock class
+    class ForgotPasswordPage(QFrame):
         def __init__(self, parent=None):
             super().__init__(parent)
-            self.setObjectName("forgetPage")
-            QLabel("Mock Forget Password Page", self).move(100, 100)
+            # (แก้ไข) เปลี่ยน ObjectName
+            self.setObjectName("forgotPage") 
+            QLabel("Mock Forgot Password Page", self).move(100, 100)
             self.back_btn = QPushButton("Mock Back", self) 
             self.back_btn.move(100, 150)
             
@@ -111,9 +114,9 @@ class LoginPage(QFrame):
         self.signup_btn.setObjectName("signupBtn")
         self.signup_btn.setGeometry(770, 480, 180, 50)
 
-        self.forget_btn = QPushButton("FORGET PASSWORD?", self)
-        self.forget_btn.setObjectName("forgetBtn")
-        self.forget_btn.setGeometry(630, 560, 260, 50)
+        self.forgot_btn = QPushButton("FORGOT PASSWORD?", self)
+        self.forgot_btn.setObjectName("forgotBtn")
+        self.forgot_btn.setGeometry(630, 560, 260, 50)
 
         self.password_visible = False 
         self.toggle_password_action = QAction(self.eye_closed_icon, "Show/Hide Password", self) 
@@ -124,7 +127,7 @@ class LoginPage(QFrame):
             self.user_label, self.username,
             self.pass_label, self.password,
             self.login_btn, self.signup_btn,
-            self.forget_btn
+            self.forgot_btn
         ])
 
     def handle_login(self):
@@ -225,11 +228,12 @@ class LoginPage(QFrame):
 # === Main Window (แก้ไข) ===
 class MainWindow(QMainWindow):
     def __init__(self):
-        
+        # (แก้ไข) เพิ่ม super().__init__()
         super().__init__()
+        
         self.setWindowTitle("Beyond Comics")
-        self.showFullScreen()
-        #self.showMaximized()
+        #self.showFullScreen()
+        self.showMaximized()
         
         self.eye_open_icon_path = "src/img/icon/angryeye.png"
         self.eye_closed_icon_path = "src/img/icon/noneye.png"
@@ -252,14 +256,15 @@ class MainWindow(QMainWindow):
             eye_closed_icon=self.eye_closed_icon,
             parent=self
         )
-        self.forget_page = ForgetPasswordPage()
+        # (แก้ไข) เปลี่ยนการเรียกใช้ชื่อคลาส
+        self.forgot_page = ForgotPasswordPage() 
         self.signup_page = SignupPage() 
 
         self.stack.addWidget(self.login_page)
-        self.stack.addWidget(self.forget_page)
+        self.stack.addWidget(self.forgot_page) 
         self.stack.addWidget(self.signup_page) 
 
-        self.login_page.forget_btn.clicked.connect(self.slide_to_forget)
+        self.login_page.forgot_btn.clicked.connect(self.slide_to_forgot) 
         self.login_page.signup_btn.clicked.connect(self.slide_to_signup) 
 
         if hasattr(self.signup_page, "back_btn"):
@@ -267,10 +272,11 @@ class MainWindow(QMainWindow):
         else:
             print("Warning: 'SignupPage' object has no attribute 'back_btn'.")
 
-        if hasattr(self.forget_page, "back_btn"):
-            self.forget_page.back_btn.clicked.connect(self.slide_to_login_from_forget)
+        if hasattr(self.forgot_page, "back_btn"):
+            self.forgot_page.back_btn.clicked.connect(self.slide_to_login_from_forgot) 
         else:
-            print("Warning: 'ForgetPasswordPage' object has no attribute 'back_btn'.")
+            # (แก้ไข) อัปเดตชื่อคลาสในข้อความ Warning
+            print("Warning: 'ForgotPasswordPage' object has no attribute 'back_btn'.") 
 
         # (เชื่อม Signal จาก LoginPage)
         self.login_page.login_successful.connect(self.on_login_success)
@@ -327,19 +333,19 @@ class MainWindow(QMainWindow):
              self.login_page.user_label, self.login_page.username,
              self.login_page.pass_label, self.login_page.password,
              self.login_page.login_btn, self.login_page.signup_btn,
-             self.login_page.forget_btn
+             self.login_page.forgot_btn
         ])
 
 
-    # --- (เมธอด slide ทั้งหมดเหมือนเดิม) ---
-    def slide_to_forget(self):
-        self.animate_slide(self.login_page, self.forget_page, "right")
+    # --- (เมธอด slide ทั้งหมด) ---
+    def slide_to_forgot(self):
+        self.animate_slide(self.login_page, self.forgot_page, "right") 
 
     def slide_to_signup(self):
         self.animate_slide(self.login_page, self.signup_page, "right")
 
-    def slide_to_login_from_forget(self):
-        self.animate_slide(self.forget_page, self.login_page, "left")
+    def slide_to_login_from_forgot(self):
+        self.animate_slide(self.forgot_page, self.login_page, "left") 
 
     def slide_to_login_from_signup(self):
         self.animate_slide(self.signup_page, self.login_page, "left")
