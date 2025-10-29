@@ -33,6 +33,7 @@ class MainUserWindow(QMainWindow):
         self.central_widget = QWidget()
         self.setCentralWidget(self.central_widget)
         
+        #ตรงนี้คือ content พวกคอมมิคทั้งหลาย
         self.main_layout = QVBoxLayout(self.central_widget)
         self.main_layout.setContentsMargins(0, 0, 0, 0)
         self.main_layout.setSpacing(0)
@@ -226,6 +227,7 @@ class MainUserWindow(QMainWindow):
         main_content_frame.setObjectName("MainContent") 
         main_layout = QVBoxLayout(main_content_frame)
         main_layout.setSpacing(20)
+        main_layout.addStretch()
         
         # อันนี้คือการปรับ maincontent พวกหน้าคอมมิค ไม่ให้ชิดขอบเกินไป
         main_layout.setContentsMargins(250, 20, 20, 20)
@@ -737,7 +739,7 @@ class MainUserWindow(QMainWindow):
         self.profile_pic_label.setObjectName("profilePicLabel")
         self.profile_pic_label.setFixedSize(250, 250) 
         
-        self.upload_button = QPushButton(" Upload Profile image")
+        self.upload_button = QPushButton("Upload Profile image")
         try:
             upload_icon = QIcon(QPixmap("src/img/icon/upload.png")) 
             self.upload_button.setIcon(upload_icon)
