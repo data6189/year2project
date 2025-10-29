@@ -194,7 +194,11 @@ class MainUserWindow(QMainWindow):
         main_content_frame.setObjectName("MainContent") 
         main_layout = QVBoxLayout(main_content_frame)
         main_layout.setSpacing(20)
-        main_layout.setContentsMargins(300, 20, 20, 20)
+        
+        # ==========================================================
+        # อันนี้คือการปรับ maincontent พวกหน้าคอมมิค ไม่ให้ชิดขอบเกินไป
+        main_layout.setContentsMargins(250, 20, 20, 20)
+        # ==========================================================
 
         browse_header_layout = QHBoxLayout()
         # (แก้ไข) เปลี่ยน browse_label เป็น self.browse_label เพื่อให้เข้าถึงได้จากฟังก์ชันอื่น
