@@ -1,6 +1,6 @@
 /* === (ไฟล์เดิมของคุณ) === */
 QMainWindow {
-    border-image: url("src/img/user/userbg.png") 0 0 0 0 stretch stretch;
+    border-image: url("src/img/admin/adminbg.png") 0 0 0 0 stretch stretch;
 }
 
 
@@ -444,4 +444,64 @@ QSpinBox#quantitySpinBox::up-button:pressed {
 
 QSpinBox#quantitySpinBox::down-button:pressed {
     background-color: #eeeeee; /* สีเทาอ่อนตอนกด */
+}
+
+
+/* ---------------------------------
+--- สไตล์หน้า Add Comic Page ---
+---------------------------------
+*/
+
+#addComicFormFrame QLabel {
+    color: #000000; /* (สีดำ) */
+    font-size: 15px; /* (ปรับขนาดตัวอักษรได้ตามชอบ) */
+    font-weight: bold; /* (ทำให้เป็นตัวหนา) */
+    padding-top: 5px; /* (ขยับให้ตรงกับช่องกรอก) */
+}
+
+/* (1) กรอบพรีวิวรูปภาพ */
+#addComicImgPreview {
+    background-color: #FFFFFF; /* (สีขาวตามที่คุณต้องการ) */
+    border: 2px dashed #CCCCCC; /* (เส้นประสีเทา) */
+    border-radius: 10px;
+    color: #888888; /* (สีตัวอักษร "Upload Comic image") */
+    font-size: 16px;
+    font-weight: bold;
+}
+
+/* (2) ช่องกรอกข้อมูลทั้งหมดในหน้านี้ */
+/* (เราใช้ #addComicField เพื่อไม่ให้กระทบช่องกรอกหน้า Profile) */
+#addComicField {
+    background-color: #FFFFFF;
+    font-size: 14px;
+    color: #333333;
+}
+
+
+#addComicField:focus {
+    border: 1px solid #FCA510; /* (สีส้มเมื่อถูกคลิก) */
+}
+
+#addComicField QAbstractItemView {
+    background-color: #FFFFFF; /* (พื้นหลังสีขาว) */
+    color: #000000;           /* (ตัวอักษรสีดำ) */
+    border: 1px solid #CCCCCC; /* (ใส่ขอบสีเทาให้ดูสวยงาม) */
+}
+
+
+
+/* (4) ปุ่ม Add Product (ปุ่มหลักสีเหลือง/ส้ม) */
+#addProductButton {
+    background-color: #FCA510; /* (สีส้ม) */
+    color: #FFFFFF; /* (สีขาว) */
+    font-size: 16px;
+    font-weight: bold;
+    border: none;
+    border-radius: 10px;
+    padding: 10px;
+}
+
+#addProductButton:hover {
+    background-color: #FFC107; /* (สีเหลืองสว่าง) */
+    color: #333333;
 }

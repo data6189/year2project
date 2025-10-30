@@ -21,14 +21,10 @@ class MainUserWindow(QMainWindow):
 
         self.is_in_edit_mode = False
 
-        # สถานะสำหรับการกรองและเรียงลำดับ
+        # (เพิ่ม) สถานะสำหรับการกรองและเรียงลำดับ
         self.current_category = "ALL"
         self.current_search_term = ""
         self.current_sort_order = "Newest" # ค่าเริ่มต้นที่แสดงใน QComboBox
-        
-        # (!!! ใหม่ !!!) เพิ่มตัวแปรสำหรับเก็บสถานะหน้ารายละเอียด
-        self.current_detail_product_id = None # ID ของสินค้าที่กำลังดู
-        self.current_detail_stock = 0       # Stock ของสินค้าที่กำลังดู
 
         self.setWindowTitle(f"Beyond Comics - Welcome {self.current_username}") 
         #self.showFullScreen()
@@ -71,8 +67,8 @@ class MainUserWindow(QMainWindow):
         # (!!! ใหม่ !!!) สร้างหน้าสำหรับรายละเอียดสินค้า
         self.product_detail_page = self.create_product_detail_page() 
 
-        self.main_content_stack.addWidget(self.browse_page)        # Index 0
-        self.main_content_stack.addWidget(self.profile_page)       # Index 1
+        self.main_content_stack.addWidget(self.browse_page)         # Index 0
+        self.main_content_stack.addWidget(self.profile_page)        # Index 1
         # (!!! ใหม่ !!!) เพิ่มหน้าใหม่เข้าไปใน stack
         self.main_content_stack.addWidget(self.product_detail_page) # Index 2
         
@@ -114,7 +110,6 @@ class MainUserWindow(QMainWindow):
         cart_button.setIconSize(QSize(50, 50)) 
         cart_button.setObjectName("navButton")
         cart_button.setFixedSize(button_width, button_height)
-        # (หมายเหตุ: ปุ่ม CART นี้ยังไม่ได้เชื่อมต่อ)
         header_layout.addWidget(cart_button)
 
         profile_icon = QIcon("src/img/icon/profile.png") 
@@ -500,7 +495,7 @@ class MainUserWindow(QMainWindow):
             self.grid_layout.addWidget(error_label, 0, 0)
 
     
-    # (!!! อัปเดตฟังก์ชันนี้ !!!)
+    # (!!! ใหม่ !!!)
     # ฟังก์ชันสร้างหน้า UI สำหรับรายละเอียดสินค้า
     def create_product_detail_page(self):
         detail_frame = QFrame()
@@ -606,44 +601,23 @@ class MainUserWindow(QMainWindow):
         
         right_info_layout.addWidget(form_widget)
         
+        right_info_layout.addWidget(form_widget)
+        
         # ราคา
-        self.detail_price_label = QLabel("Price : 0.00 THB")
+        self.detail_price_label = QLabel("Price : 0.00 Bath")
         self.detail_price_label.setObjectName("detailPrice")
         # (!!! แก้ไข !!!) จัดชิดขวา
         self.detail_price_label.setAlignment(Qt.AlignmentFlag.AlignRight) 
         right_info_layout.addWidget(self.detail_price_label)
         
-        # (!!! ใหม่ !!!) สร้าง Layout สำหรับปุ่ม Add to Cart และ Quantity
-        cart_layout = QHBoxLayout()
-        cart_layout.setSpacing(10)
-        cart_layout.setAlignment(Qt.AlignmentFlag.AlignRight) # จัดชิดขวา
-
-        # (!!! ใหม่ !!!) 1. Label
-        quantity_label = QLabel("QUANTITY :")
-        quantity_label.setObjectName("quantityLabel") # สำหรับ QSS
-        cart_layout.addWidget(quantity_label)
-
-        # (!!! ใหม่ !!!) 2. QSpinBox
-        self.detail_quantity_spinbox = QSpinBox()
-        self.detail_quantity_spinbox.setLocale(QLocale("en_US"))
-        self.detail_quantity_spinbox.setObjectName("quantitySpinBox") # สำหรับ QSS
-        self.detail_quantity_spinbox.setMinimum(1) # <<<< ลอจิก: ห้ามต่ำกว่า 1
-        self.detail_quantity_spinbox.setMaximum(99)  # <<<< (จะถูกอัปเดตโดย stock)
-        self.detail_quantity_spinbox.setValue(1)
-        self.detail_quantity_spinbox.setFixedWidth(60) # ขนาด
-        cart_layout.addWidget(self.detail_quantity_spinbox)
-        
-        # (!!! แก้ไข !!!) 3. ปุ่ม Add to Cart (ย้ายมาใส่ใน cart_layout)
+        # ปุ่ม Add to Cart
         self.detail_add_to_cart_button = QPushButton("Add to Cart")
         self.detail_add_to_cart_button.setObjectName("addToCartButton")
         self.detail_add_to_cart_button.setFixedHeight(60)
-        # (!!! ใหม่ !!!) เชื่อมต่อปุ่มกับฟังก์ชัน
-        self.detail_add_to_cart_button.clicked.connect(self.handle_add_to_cart) 
-        cart_layout.addWidget(self.detail_add_to_cart_button)
+        # (ยังไม่ต้องใส่ฟังก์ชัน)
+        # self.detail_add_to_cart_button.clicked.connect(self.add_to_cart_function) 
+        right_info_layout.addWidget(self.detail_add_to_cart_button, 0, Qt.AlignmentFlag.AlignRight)
 
-        # (!!! แก้ไข !!!) เพิ่ม cart_layout ลงใน right_info_layout
-        right_info_layout.addLayout(cart_layout)
-        
         right_info_layout.addStretch() # ดันทุกอย่างขึ้นไปด้านบน
         
         # (!!! แก้ไข !!!) จัด widget ข้อมูลไปทางขวา
@@ -651,11 +625,11 @@ class MainUserWindow(QMainWindow):
 
         return detail_frame
 
-    # (!!! อัปเดตฟังก์ชันนี้ !!!)
+    # (!!! ใหม่ !!!)
     # ฟังก์ชันสำหรับโหลดข้อมูลสินค้าจาก DB มาแสดง
     # (!!! แก้ไข !!!) เปลี่ยน product_isbn เป็น product_id และแก้ไขการจัดการ Error
     def load_product_details(self, product_id):
-        # รีเซ็ต UI และสถานะก่อนโหลด
+        # รีเซ็ต UI ก่อนโหลดข้อมูลใหม่
         self.detail_name_label.setText("Loading...")
         self.detail_desc_label.setText("Loading details...")
         self.detail_volume_label.setText("N/A")
@@ -664,16 +638,6 @@ class MainUserWindow(QMainWindow):
         self.detail_isbn_label.setText("N/A") 
         self.detail_stock_label.setText("N/A")
         self.detail_price_label.setText("Price : N/A")
-        
-        # (!!! ใหม่ !!!) รีเซ็ตสถานะ
-        self.current_detail_product_id = None
-        self.current_detail_stock = 0
-        
-        # (!!! ใหม่ !!!) ปิดการใช้งานปุ่มและ spinbox ระหว่างรอโหลด
-        self.detail_quantity_spinbox.setEnabled(False)
-        self.detail_quantity_spinbox.setValue(1)
-        self.detail_add_to_cart_button.setEnabled(False)
-        self.detail_add_to_cart_button.setText("Loading...")
         
         # (เพิ่ม) ตั้งค่าพื้นหลังเป็นสีขาวทันที
         placeholder_pixmap = QPixmap(self.detail_cover_label.size())
@@ -710,30 +674,8 @@ class MainUserWindow(QMainWindow):
                 self.detail_rated_label.setText(rated or "N/A")
                 # (!!! แก้ไข !!!) เปลี่ยนเป็น str(id)
                 self.detail_isbn_label.setText(str(id) if id is not None else "N/A")
-                
-                # (!!! แก้ไข !!!) อัปเดต UI และเก็บค่า Stock
-                stock_available = stock if stock is not None else 0
-                self.detail_stock_label.setText(str(stock_available))
-                self.detail_price_label.setText(f"Price : {price:.2f} THB" if price is not None else "Price : N/A")
-
-                # (!!! ใหม่ !!!) อัปเดตสถานะสำหรับ Logic ตะกร้า
-                self.current_detail_product_id = id
-                self.current_detail_stock = stock_available
-
-                # (!!! ใหม่ !!!) ลอจิกสำคัญ: ควบคุม QSpinBox และปุ่ม Add to Cart
-                if stock_available > 0:
-                    self.detail_quantity_spinbox.setMaximum(stock_available) # <<<< ตั้งค่า Max ตาม Stock
-                    self.detail_quantity_spinbox.setValue(1) # รีเซ็ตเป็น 1
-                    self.detail_quantity_spinbox.setEnabled(True)
-                    self.detail_add_to_cart_button.setEnabled(True)
-                    self.detail_add_to_cart_button.setText("Add to Cart")
-                else:
-                    # ถ้า Stock = 0
-                    self.detail_quantity_spinbox.setMaximum(0)
-                    self.detail_quantity_spinbox.setValue(0)
-                    self.detail_quantity_spinbox.setEnabled(False)
-                    self.detail_add_to_cart_button.setEnabled(False)
-                    self.detail_add_to_cart_button.setText("Out of Stock")
+                self.detail_stock_label.setText(str(stock) if stock is not None else "N/A")
+                self.detail_price_label.setText(f"Price : {price:.2f} Bath" if price is not None else "Price : N/A")
 
                 # โหลดรูปภาพปก
                 pixmap = None
@@ -764,11 +706,6 @@ class MainUserWindow(QMainWindow):
                 pixmap.fill(Qt.GlobalColor.white) # พื้นหลังขาว
                 self.detail_cover_label.setPixmap(pixmap)
                 print(f"ไม่พบสินค้าที่มี ID: {product_id}")
-                
-                # (!!! ใหม่ !!!) ปิดการใช้งานปุ่มหากไม่พบสินค้า
-                self.detail_quantity_spinbox.setEnabled(False)
-                self.detail_add_to_cart_button.setEnabled(False)
-                self.detail_add_to_cart_button.setText("Unavailable")
 
 
         except Exception as e:
@@ -779,11 +716,6 @@ class MainUserWindow(QMainWindow):
             pixmap = QPixmap(self.detail_cover_label.size())
             pixmap.fill(Qt.GlobalColor.lightGray) # สำหรับ Error ทั่วไปใช้สีเทาอ่อน
             self.detail_cover_label.setPixmap(pixmap)
-            
-            # (!!! ใหม่ !!!) ปิดการใช้งานปุ่มหากเกิด Error
-            self.detail_quantity_spinbox.setEnabled(False)
-            self.detail_add_to_cart_button.setEnabled(False)
-            self.detail_add_to_cart_button.setText("Error")
 
 
     # (!!! ใหม่ !!!)
@@ -801,48 +733,7 @@ class MainUserWindow(QMainWindow):
         self.sidebar_stack.setCurrentIndex(2)
         self.main_content_stack.setCurrentIndex(2)
         
-    # (!!! ใหม่ !!!)
-    # ฟังก์ชันสำหรับจัดการการกดปุ่ม Add to Cart
-    def handle_add_to_cart(self):
-        # 1. ดึงข้อมูลจากสถานะ
-        quantity = self.detail_quantity_spinbox.value()
-        product_id = self.current_detail_product_id
-        stock = self.current_detail_stock
-
-        # 2. ตรวจสอบ Validation (แม้ว่า UI จะป้องกันไว้แล้วก็ตาม)
-        if product_id is None:
-            QMessageBox.warning(self, "Error", "No product selected or product is unavailable.")
-            return
-
-        if quantity <= 0:
-            QMessageBox.warning(self, "Invalid Quantity", "Quantity must be at least 1.")
-            return
         
-        # (ลอจิกสำคัญ) ตรวจสอบ Stock
-        if quantity > stock:
-            QMessageBox.warning(self, "Stock Exceeded", 
-                                f"Sorry, only {stock} items are available.\n"
-                                f"Please adjust the quantity.")
-            # (ปรับปรุง UX) ตั้งค่า spinbox กลับไปที่ค่า max
-            self.detail_quantity_spinbox.setValue(stock) 
-            return
-
-        # 3. (ณ ตอนนี้) แสดงผลลัพธ์
-        # (อนาคต) ตรงนี้คือส่วนที่คุณจะเพิ่ม Logic การเพิ่มลงใน DB ตะกร้า
-        print("--- 🛒 ADD TO CART ---")
-        print(f"    User: {self.current_username}")
-        print(f"    Product ID: {product_id}")
-        print(f"    Product Name: {self.detail_name_label.text()}")
-        print(f"    Quantity: {quantity}")
-        print("-----------------------")
-        
-        QMessageBox.information(self, "Success", 
-                                f"Added {quantity} x '{self.detail_name_label.text()}' to your cart.")
-        
-        # (UX) รีเซ็ตค่ากลับเป็น 1
-        self.detail_quantity_spinbox.setValue(1)
-
-
     def create_profile_page(self):
         profile_frame = QFrame()
         profile_frame.setObjectName("ProfilePage") 
@@ -1068,7 +959,6 @@ class MainUserWindow(QMainWindow):
             elif is_combo_box:
                 field.setEnabled(not read_only)
 
-            # ใช้ Property เพื่อช่วย QSS
             field.setProperty("readOnly", read_only) 
             self.style().polish(field)
 
@@ -1083,7 +973,6 @@ class MainUserWindow(QMainWindow):
         self.upload_button.setVisible(False)
         self.confirm_button.setVisible(False)
         self.edit_button.setVisible(True)
-        # โหลดข้อมูลซ้ำ (เพื่อยกเลิกการแก้ไขที่ยังไม่บันทึก)
         self.load_user_profile()
 
     def toggle_edit_mode(self):
@@ -1157,7 +1046,6 @@ class MainUserWindow(QMainWindow):
 
 
     def show_profile_page(self):
-        # ปิด Edit Mode (ถ้าเผลอเปิดไว้) และโหลดข้อมูลใหม่
         self.disable_edit_mode()
         self.load_user_profile()
         
@@ -1177,8 +1065,8 @@ class MainUserWindow(QMainWindow):
 
     def handle_logout(self):
         reply = QMessageBox.question(self, 'Logout', 'Are you sure you want to logout?',
-                                     QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
-                                     QMessageBox.StandardButton.No)
+                                        QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+                                        QMessageBox.StandardButton.No)
 
         if reply == QMessageBox.StandardButton.Yes:
             self.logout_requested.emit()
@@ -1197,7 +1085,7 @@ if __name__ == '__main__':
     # - description (สำหรับหน้ารายละเอียด)
     # - writer (สำหรับหน้ารายละเอียด)
     # - rated (สำหรับหน้ารายละเอียด)
-    # - stock (สำหรับหน้ารายละเอียด) <--- (สำคัญมากสำหรับหน้ารายละเอียด)
+    # - stock (สำหรับหน้ารายละเอียด)
     # - price (สำหรับหน้ารายละเอียด)
     #
     window = MainUserWindow(username="test") 
