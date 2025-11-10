@@ -1,49 +1,82 @@
 import sys
 import os
 import sqlite3
+from datetime import datetime
 from PyQt6.QtWidgets import *
 from PyQt6.QtGui import *
 from PyQt6.QtCore import *
 
-# (สำคัญ) ตรวจสอบให้แน่ใจว่าเส้นทางไปยังฐานข้อมูลถูกต้อง
-DB_PATH = "src/database/thisshop.db" 
+# --- IMPORT สำหรับ ReportLab (สร้าง PDF) ---
+from reportlab.pdfgen import canvas
+from reportlab.lib.pagesizes import A4
+from reportlab.lib.units import mm
+from reportlab.platypus import Table, TableStyle
+from reportlab.lib import colors
+from reportlab.pdfbase import pdfmetrics
+from reportlab.pdfbase.ttfonts import TTFont
+# ----------------------------------------
+
+# --- ตั้งค่า PATH ต่างๆ ---
+DB_PATH = "src/database/thisshop.db"
+FONT_PATH = "src/font/THSarabunNew.ttf"
+LOGO_PATH = "src/img/icon/logo.png"
+PDF_OUTPUT_DIR = "receipts"
+# -----------------------
+
+# --- IMPORT สำหรับ Info Window ---
+InfoWindow = None  # กำหนดค่าเริ่มต้นเป็น None ป้องกัน NameError
+try:
+    from info_window import InfoWindow
+except ImportError:
+    print("Warning: ไม่สามารถ import InfoWindow ได้ กรุณาตรวจสอบว่าไฟล์ info_window.py อยู่ในโฟลเดอร์เดียวกัน")
+# --------------------------------
+
 
 class MainUserWindow(QMainWindow):
     logout_requested = pyqtSignal()
-    
+
     def __init__(self, username, parent=None):
         super().__init__(parent)
-        self.current_username = username 
-        
-        self.new_profile_img_path = None # เส้นทางรูปโปรไฟล์ใหม่ที่เลือก
-        self.current_profile_img_path = None # เส้นทางรูปโปรไฟล์ปัจจุบันจาก DB
-        self.editable_profile_fields = [] # รายการช่องที่แก้ไขได้
+        self.current_username = username
+
+        self.new_profile_img_path = None
+        self.current_profile_img_path = None
+        self.editable_profile_fields = []
 
         self.is_in_edit_mode = False
 
         # สถานะสำหรับการกรองและเรียงลำดับ
         self.current_category = "ALL"
         self.current_search_term = ""
-        self.current_sort_order = "Newest" # ค่าเริ่มต้นที่แสดงใน QComboBox
-        
-        # (!!! ใหม่ !!!) เพิ่มตัวแปรสำหรับเก็บสถานะหน้ารายละเอียด
-        self.current_detail_product_id = None # ID ของสินค้าที่กำลังดู
-        self.current_detail_stock = 0       # Stock ของสินค้าที่กำลังดู
+        self.current_sort_order = "Newest"
 
-        self.setWindowTitle(f"Beyond Comics - Welcome {self.current_username}") 
-        #self.showFullScreen()
+        # สถานะหน้ารายละเอียด
+        self.current_detail_product_id = None
+        self.current_detail_stock = 0
+
+        # สถานะสำหรับหน้า Checkout
+        self.current_slip_path = None
+
+        # [NEW] สถานะสำหรับหน้า Order Details (เพื่อใช้ในการพิมพ์ใบเสร็จ)
+        self.current_viewing_order_id = None
+
+        # [NEW] เตรียมฟอนต์สำหรับ PDF
+        self.init_receipt_font()
+
+        self.setWindowTitle(f"Beyond Comics - Welcome {self.current_username}")
         self.showMaximized()
 
         self.central_widget = QWidget()
         self.setCentralWidget(self.central_widget)
-        
-        #ตรงนี้คือ content พวกคอมมิคทั้งหลาย
+
         self.main_layout = QVBoxLayout(self.central_widget)
         self.main_layout.setContentsMargins(0, 0, 0, 0)
         self.main_layout.setSpacing(0)
 
         self.header_frame = self.create_header()
         self.main_layout.addWidget(self.header_frame)
+        
+        self.create_info_button()
 
         self.body_widget = QWidget()
         self.body_layout = QHBoxLayout(self.body_widget)
@@ -52,40 +85,49 @@ class MainUserWindow(QMainWindow):
 
         self.sidebar_stack = QStackedWidget()
         self.sidebar_stack.setFixedWidth(260)
-        
+
         self.browse_sidebar = self.create_browse_sidebar()
         self.profile_sidebar = self.create_profile_sidebar()
-        # (!!! ใหม่ !!!) สร้าง sidebar สำหรับหน้ารายละเอียด
-        self.detail_sidebar = self.create_detail_sidebar() 
-        
-        self.sidebar_stack.addWidget(self.browse_sidebar)   # Index 0
-        self.sidebar_stack.addWidget(self.profile_sidebar)  # Index 1
-        # (!!! ใหม่ !!!) เพิ่ม sidebar ใหม่เข้าไปใน stack
-        self.sidebar_stack.addWidget(self.detail_sidebar)   # Index 2
-        
-        self.body_layout.addWidget(self.sidebar_stack) 
+        self.detail_sidebar = self.create_detail_sidebar()
+        self.cart_sidebar = self.create_cart_sidebar()
+        self.checkout_sidebar = self.create_checkout_sidebar()
+        self.orders_sidebar = self.create_orders_sidebar()
+        self.order_details_sidebar = self.create_order_details_sidebar()
+
+        self.sidebar_stack.addWidget(self.browse_sidebar)        # Index 0
+        self.sidebar_stack.addWidget(self.profile_sidebar)       # Index 1
+        self.sidebar_stack.addWidget(self.detail_sidebar)        # Index 2
+        self.sidebar_stack.addWidget(self.cart_sidebar)          # Index 3
+        self.sidebar_stack.addWidget(self.checkout_sidebar)      # Index 4
+        self.sidebar_stack.addWidget(self.orders_sidebar)        # Index 5
+        self.sidebar_stack.addWidget(self.order_details_sidebar) # Index 6
+
+        self.body_layout.addWidget(self.sidebar_stack)
 
         self.main_content_stack = QStackedWidget()
         self.browse_page = self.create_browse_page()
         self.profile_page = self.create_profile_page()
-        # (!!! ใหม่ !!!) สร้างหน้าสำหรับรายละเอียดสินค้า
-        self.product_detail_page = self.create_product_detail_page() 
+        self.product_detail_page = self.create_product_detail_page()
+        self.cart_page = self.create_cart_page()
+        self.checkout_page = self.create_checkout_page()
+        self.orders_page = self.create_orders_page()
+        self.order_details_page = self.create_order_details_page()
 
-        self.main_content_stack.addWidget(self.browse_page)        # Index 0
-        self.main_content_stack.addWidget(self.profile_page)       # Index 1
-        # (!!! ใหม่ !!!) เพิ่มหน้าใหม่เข้าไปใน stack
+        self.main_content_stack.addWidget(self.browse_page)         # Index 0
+        self.main_content_stack.addWidget(self.profile_page)        # Index 1
         self.main_content_stack.addWidget(self.product_detail_page) # Index 2
-        
+        self.main_content_stack.addWidget(self.cart_page)           # Index 3
+        self.main_content_stack.addWidget(self.checkout_page)       # Index 4
+        self.main_content_stack.addWidget(self.orders_page)         # Index 5
+        self.main_content_stack.addWidget(self.order_details_page)  # Index 6
+
         self.body_layout.addWidget(self.main_content_stack, 1)
 
         self.main_layout.addWidget(self.body_widget, 1)
-
-        # (แก้ไข) ตรวจสอบให้แน่ใจว่าโหลดไฟล์ QSS ที่ถูกต้อง
+        
         self.load_stylesheet("src/styles/mainuser.qss")
         self.load_user_profile()
-        
         self.set_profile_fields_read_only(True)
-
 
     def load_stylesheet(self, filepath):
         try:
@@ -96,6 +138,7 @@ class MainUserWindow(QMainWindow):
         except Exception as e:
             print(f"เกิดข้อผิดพลาดในการโหลด stylesheet: {e}")
 
+    # --- HEADER ---
     def create_header(self):
         header_frame = QFrame()
         header_frame.setObjectName("Header")
@@ -107,17 +150,17 @@ class MainUserWindow(QMainWindow):
 
         button_height = 60
         button_width = 190
-        
-        cart_icon = QIcon("src/img/icon/cart.png") 
-        cart_button = QPushButton(" CART") 
+
+        cart_icon = QIcon("src/img/icon/cart.png")
+        cart_button = QPushButton(" CART")
         cart_button.setIcon(cart_icon)
-        cart_button.setIconSize(QSize(50, 50)) 
+        cart_button.setIconSize(QSize(50, 50))
         cart_button.setObjectName("navButton")
         cart_button.setFixedSize(button_width, button_height)
-        # (หมายเหตุ: ปุ่ม CART นี้ยังไม่ได้เชื่อมต่อ)
+        cart_button.clicked.connect(self.show_cart_page)
         header_layout.addWidget(cart_button)
 
-        profile_icon = QIcon("src/img/icon/profile.png") 
+        profile_icon = QIcon("src/img/icon/profile.png")
         profile_button = QPushButton(" PROFILE")
         profile_button.setIcon(profile_icon)
         profile_button.setIconSize(QSize(50, 50))
@@ -134,60 +177,75 @@ class MainUserWindow(QMainWindow):
 
         return header_frame
 
+    # --- INFO BUTTON METHODS ---
+    def create_info_button(self):
+        self.btn_info = QPushButton(self.central_widget)
+        self.btn_info.setObjectName("btn_info")
+        self.btn_info.setCursor(Qt.CursorShape.PointingHandCursor)
+        # กำหนดขนาดและตำแหน่ง (ปรับ x, y ตามต้องการเพื่อให้ตรงกับดีไซน์)
+        self.btn_info.setGeometry(368, 75, 60, 60) 
+        self.btn_info.raise_() # ดึงปุ่มขึ้นมาไว้บนสุด
+        self.btn_info.clicked.connect(self.open_info_window)
+
+    def open_info_window(self):
+        # ตรวจสอบว่าคลาส InfoWindow ถูก import มาสำเร็จหรือไม่
+        if InfoWindow is None:
+             QMessageBox.warning(self, "Error", "ไม่พบไฟล์ info_window.py")
+             return
+
+        # ส่ง self (ตัวหน้าต่าง MainUserWindow นี้) ไปด้วย เพื่อให้ InfoWindow เรียกกลับมาได้
+        self.info_window_instance = InfoWindow(user_id=self.current_username, parent_window=self)
+        self.info_window_instance.show()
+        self.hide() # ซ่อนหน้าต่าง Main นี้ไว้ก่อ
+
+    # --- SIDEBARS ---
     def create_browse_sidebar(self):
         sidebar_frame = QFrame()
-        sidebar_frame.setObjectName("Sidebar") 
+        sidebar_frame.setObjectName("Sidebar")
         sidebar_layout = QVBoxLayout(sidebar_frame)
         sidebar_layout.setContentsMargins(20, 30, 20, 20)
         sidebar_layout.setSpacing(25)
         sidebar_layout.setAlignment(Qt.AlignmentFlag.AlignTop)
 
         button_height = 55
-
         btn_marvel = QPushButton("MARVEL")
         btn_marvel.setObjectName("sidebarButton")
         btn_marvel.setFixedHeight(button_height)
-        # (แก้ไข) เชื่อมต่อปุ่มกับฟังก์ชัน filter_products_by_category
-        btn_marvel.clicked.connect(lambda: self.filter_products_by_category("MARVEL")) 
+        btn_marvel.clicked.connect(lambda: self.filter_products_by_category("MARVEL"))
         sidebar_layout.addWidget(btn_marvel)
 
         btn_dc = QPushButton("DC")
         btn_dc.setObjectName("sidebarButton")
         btn_dc.setFixedHeight(button_height)
-        # (แก้ไข) เชื่อมต่อปุ่มกับฟังก์ชัน filter_products_by_category
         btn_dc.clicked.connect(lambda: self.filter_products_by_category("DC"))
         sidebar_layout.addWidget(btn_dc)
 
         btn_image = QPushButton("Image Comics")
         btn_image.setObjectName("sidebarButton")
         btn_image.setFixedHeight(button_height)
-        # (แก้ไข) เชื่อมต่อปุ่มกับฟังก์ชัน filter_products_by_category
-        # (หมายเหตุ) สมมติว่า category ใน DB คือ "Image Comics"
         btn_image.clicked.connect(lambda: self.filter_products_by_category("Image Comics"))
         sidebar_layout.addWidget(btn_image)
+
         sidebar_layout.addStretch()
-        
-        # (แก้ไข) แก้ไขชื่อตัวแปรปุ่ม 'ALL' จาก btn_image เป็น btn_all
+
         btn_all = QPushButton("ALL")
         btn_all.setObjectName("sidebarButton")
         btn_all.setFixedHeight(button_height)
-        # (แก้ไข) เชื่อมต่อปุ่มกับฟังก์ชัน filter_products_by_category
         btn_all.clicked.connect(lambda: self.filter_products_by_category("ALL"))
         sidebar_layout.addWidget(btn_all)
         sidebar_layout.addStretch()
-        
+
         return sidebar_frame
 
     def create_profile_sidebar(self):
         sidebar_frame = QFrame()
-        sidebar_frame.setObjectName("Sidebar") 
+        sidebar_frame.setObjectName("Sidebar")
         sidebar_layout = QVBoxLayout(sidebar_frame)
         sidebar_layout.setContentsMargins(20, 30, 20, 20)
         sidebar_layout.setSpacing(25)
         sidebar_layout.setAlignment(Qt.AlignmentFlag.AlignTop)
 
         button_height = 55
-
         btn_profile = QPushButton("PROFILE")
         btn_profile.setObjectName("profilesidebarButton")
         btn_profile.setFixedHeight(button_height)
@@ -199,77 +257,190 @@ class MainUserWindow(QMainWindow):
         btn_back.setFixedHeight(button_height)
         btn_back.clicked.connect(self.show_browse_page)
         sidebar_layout.addWidget(btn_back)
-        
+
         sidebar_layout.addStretch()
         return sidebar_frame
 
-    # (!!! ใหม่ !!!)
-    # ฟังก์ชันสำหรับสร้าง Sidebar ของหน้า Detail
     def create_detail_sidebar(self):
         sidebar_frame = QFrame()
-        sidebar_frame.setObjectName("Sidebar") 
+        sidebar_frame.setObjectName("Sidebar")
         sidebar_layout = QVBoxLayout(sidebar_frame)
         sidebar_layout.setContentsMargins(20, 30, 20, 20)
         sidebar_layout.setSpacing(25)
         sidebar_layout.setAlignment(Qt.AlignmentFlag.AlignTop)
 
         button_height = 55
-
-        # ปุ่ม Back (เหมือนในหน้า Profile)
         btn_back = QPushButton("Back")
         btn_back.setObjectName("backsidebarButton")
         btn_back.setFixedHeight(button_height)
-        # เชื่อมต่อกับ show_browse_page เพื่อกลับไปหน้า BROWSE
         btn_back.clicked.connect(self.show_browse_page)
         sidebar_layout.addWidget(btn_back)
-        
+
         sidebar_layout.addStretch()
         return sidebar_frame
 
+    def create_cart_sidebar(self):
+        sidebar_frame = QFrame()
+        sidebar_frame.setObjectName("Sidebar")
+        sidebar_layout = QVBoxLayout(sidebar_frame)
+        sidebar_layout.setContentsMargins(20, 30, 20, 20)
+        sidebar_layout.setSpacing(25)
+        sidebar_layout.setAlignment(Qt.AlignmentFlag.AlignTop)
 
+        button_height = 55
+        btn_cart = QPushButton("CART")
+        btn_cart.setObjectName("sidebarButtonActive")
+        btn_cart.setFixedHeight(button_height)
+        btn_cart.setEnabled(False)
+        sidebar_layout.addWidget(btn_cart)
+
+        btn_orders = QPushButton("Your Orders")
+        btn_orders.setObjectName("sidebarButton")
+        btn_orders.setFixedHeight(button_height)
+        btn_orders.clicked.connect(self.show_orders_page)
+        sidebar_layout.addWidget(btn_orders)
+
+        btn_back = QPushButton("Back")
+        btn_back.setObjectName("backsidebarButton")
+        btn_back.setFixedHeight(button_height)
+        btn_back.clicked.connect(self.show_browse_page)
+        sidebar_layout.addWidget(btn_back)
+
+        sidebar_layout.addStretch()
+        return sidebar_frame
+
+    def create_checkout_sidebar(self):
+        sidebar_frame = QFrame()
+        sidebar_frame.setObjectName("Sidebar")
+        sidebar_layout = QVBoxLayout(sidebar_frame)
+        sidebar_layout.setContentsMargins(20, 30, 20, 20)
+        sidebar_layout.setSpacing(25)
+        sidebar_layout.setAlignment(Qt.AlignmentFlag.AlignTop)
+
+        button_height = 55
+        btn_cart = QPushButton("CART")
+        btn_cart.setObjectName("sidebarButtonActive")
+        btn_cart.setFixedHeight(button_height)
+        btn_cart.clicked.connect(self.show_cart_page)
+        sidebar_layout.addWidget(btn_cart)
+
+        btn_orders = QPushButton("Your Orders")
+        btn_orders.setObjectName("sidebarButton")
+        btn_orders.setFixedHeight(button_height)
+        btn_orders.clicked.connect(self.show_orders_page)
+        sidebar_layout.addWidget(btn_orders)
+
+        btn_back = QPushButton("Back")
+        btn_back.setObjectName("backsidebarButton")
+        btn_back.setFixedHeight(button_height)
+        btn_back.clicked.connect(self.show_browse_page)
+        sidebar_layout.addWidget(btn_back)
+
+        sidebar_layout.addStretch()
+        return sidebar_frame
+
+    def create_orders_sidebar(self):
+        sidebar_frame = QFrame()
+        sidebar_frame.setObjectName("Sidebar")
+        sidebar_layout = QVBoxLayout(sidebar_frame)
+        sidebar_layout.setContentsMargins(20, 30, 20, 20)
+        sidebar_layout.setSpacing(25)
+        sidebar_layout.setAlignment(Qt.AlignmentFlag.AlignTop)
+
+        button_height = 55
+        btn_cart = QPushButton("CART")
+        btn_cart.setObjectName("sidebarButton")
+        btn_cart.setFixedHeight(button_height)
+        btn_cart.clicked.connect(self.show_cart_page)
+        sidebar_layout.addWidget(btn_cart)
+
+        btn_orders = QPushButton("Your Orders")
+        btn_orders.setObjectName("sidebarButtonActive")
+        btn_orders.setFixedHeight(button_height)
+        btn_orders.setEnabled(False)
+        sidebar_layout.addWidget(btn_orders)
+
+        btn_back = QPushButton("Back")
+        btn_back.setObjectName("backsidebarButton")
+        btn_back.setFixedHeight(button_height)
+        btn_back.clicked.connect(self.show_browse_page)
+        sidebar_layout.addWidget(btn_back)
+
+        sidebar_layout.addStretch()
+        return sidebar_frame
+
+    def create_order_details_sidebar(self):
+        sidebar_frame = QFrame()
+        sidebar_frame.setObjectName("Sidebar")
+        sidebar_layout = QVBoxLayout(sidebar_frame)
+        sidebar_layout.setContentsMargins(20, 30, 20, 20)
+        sidebar_layout.setSpacing(25)
+        sidebar_layout.setAlignment(Qt.AlignmentFlag.AlignTop)
+
+        button_height = 55
+        btn_cart = QPushButton("CART")
+        btn_cart.setObjectName("sidebarButton")
+        btn_cart.setFixedHeight(button_height)
+        btn_cart.clicked.connect(self.show_cart_page)
+        sidebar_layout.addWidget(btn_cart)
+
+        btn_orders = QPushButton("Your Orders")
+        btn_orders.setObjectName("sidebarButtonActive")
+        btn_orders.setFixedHeight(button_height)
+        btn_orders.clicked.connect(self.show_orders_page)
+        sidebar_layout.addWidget(btn_orders)
+
+        btn_back = QPushButton("Back")
+        btn_back.setObjectName("backsidebarButton")
+        btn_back.setFixedHeight(button_height)
+        btn_back.clicked.connect(self.show_browse_page)
+        sidebar_layout.addWidget(btn_back)
+
+        sidebar_layout.addStretch()
+        return sidebar_frame
+
+    # --- BROWSE PAGE ---
     def create_browse_page(self):
         main_content_frame = QFrame()
-        main_content_frame.setObjectName("MainContent") 
+        main_content_frame.setObjectName("MainContent")
         main_layout = QVBoxLayout(main_content_frame)
         main_layout.setSpacing(20)
         main_layout.addStretch()
-        
-        # อันนี้คือการปรับ maincontent พวกหน้าคอมมิค ไม่ให้ชิดขอบเกินไป
         main_layout.setContentsMargins(250, 20, 20, 20)
-        
+
         browse_header_layout = QHBoxLayout()
         self.browse_label = QLabel("BROWSE")
         self.browse_label.setObjectName("browseLabel")
         browse_header_layout.addWidget(self.browse_label)
         browse_header_layout.addStretch()
-        
+
         self.sort_combo = QComboBox()
         self.sort_combo.setObjectName("sortCombo")
         self.sort_combo.addItems(["Newest", "Oldest", "A-Z"])
         self.sort_combo.setFixedHeight(35)
         self.sort_combo.currentTextChanged.connect(self.on_sort_order_changed)
         browse_header_layout.addWidget(self.sort_combo)
-        
+
         main_layout.addLayout(browse_header_layout)
         search_layout = QHBoxLayout()
         search_layout.setContentsMargins(0, 0, 0, 0)
         search_layout.setSpacing(10)
-        
+
         self.search_input = QLineEdit()
         self.search_input.setObjectName("searchBox")
         self.search_input.setPlaceholderText("Search comics...")
         self.search_input.setFixedHeight(40)
         self.search_input.textChanged.connect(self.on_search_text_changed)
-        
+
         self.search_button = QPushButton("Search")
         self.search_button.setObjectName("searchButton")
         self.search_button.setFixedHeight(40)
         self.search_button.clicked.connect(self.on_search_button_clicked)
-        
+
         search_layout.addWidget(self.search_input, stretch=1)
         search_layout.addWidget(self.search_button)
         main_layout.addLayout(search_layout)
-        
+
         scroll_area = QScrollArea()
         scroll_area.setObjectName("scrollArea")
         scroll_area.setWidgetResizable(True)
@@ -278,55 +449,42 @@ class MainUserWindow(QMainWindow):
         scroll_area.setFrameShape(QFrame.Shape.NoFrame)
         scroll_content_widget = QWidget()
         scroll_content_widget.setObjectName("scrollContent")
-        
+
         self.grid_layout = QGridLayout(scroll_content_widget)
         self.grid_layout.setSpacing(20)
         self.grid_layout.setContentsMargins(20, 20, 20, 20)
-        
+
         self.refresh_comic_grid()
-        
+
         scroll_area.setWidget(scroll_content_widget)
         main_layout.addWidget(scroll_area, stretch=1)
-        
+
         return main_content_frame
 
-    # (ฟังก์ชันใหม่) สำหรับจัดการเมื่อพิมพ์ในช่อง search
     def on_search_text_changed(self, text):
         self.current_search_term = text.strip()
-        self.refresh_comic_grid() # เรียกอัปเดต grid
+        self.refresh_comic_grid()
 
-    # (ฟังก์ชันใหม่) สำหรับจัดการเมื่อกดปุ่ม search
     def on_search_button_clicked(self):
-        # ดึงค่าล่าสุดจาก search_input (เผื่อ)
         self.current_search_term = self.search_input.text().strip()
-        self.refresh_comic_grid() # เรียกอัปเดต grid
+        self.refresh_comic_grid()
 
-    # (ฟังก์ชันใหม่) สำหรับจัดการเมื่อเปลี่ยนการเรียงลำดับ
     def on_sort_order_changed(self, sort_text):
         self.current_sort_order = sort_text
-        self.refresh_comic_grid() # เรียกอัปเดต grid
+        self.refresh_comic_grid()
 
-    # (ฟังก์ชันแก้ไข) สำหรับการกรอง category
     def filter_products_by_category(self, category):
-        print(f"กำลังกรองสำหรับ: {category}")
         if category == "ALL":
             self.browse_label.setText("BROWSE")
         else:
-            # ใช้ .title() หรือ .upper() เพื่อความสวยงาม
-            self.browse_label.setText(f"BROWSE - {category.upper()}") 
-            
-        # (แก้ไข) อัปเดต state และเรียก refresh
+            self.browse_label.setText(f"BROWSE - {category.upper()}")
+
         self.current_category = category
-        # (เพิ่ม) เมื่อเปลี่ยน category, ให้ล้างช่อง search
         self.current_search_term = ""
-        self.search_input.setText("") # อัปเดต UI ช่อง search
-        
+        self.search_input.setText("")
         self.refresh_comic_grid()
 
-    # (!!! อัปเดต !!!)
-    # แก้ไข Query ให้ดึง id และเปลี่ยน QFrame เป็น QPushButton
     def refresh_comic_grid(self):
-        # 1. ล้าง grid_layout เก่า
         try:
             while self.grid_layout.count():
                 item = self.grid_layout.takeAt(0)
@@ -336,126 +494,100 @@ class MainUserWindow(QMainWindow):
         except Exception as e:
             print(f"เกิดข้อผิดพลาดขณะล้าง grid: {e}")
 
-        # 2. ดึงข้อมูลใหม่ตาม state
         try:
             if not os.path.exists(DB_PATH):
-                print(f"ข้อผิดพลาด: ไม่พบไฟล์ DB ที่: {DB_PATH}")
                 error_label = QLabel(f"Error: Database not found at\n{DB_PATH}")
                 error_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
                 self.grid_layout.addWidget(error_label, 0, 0)
-                return 
+                return
 
             conn = sqlite3.connect(DB_PATH)
             cursor = conn.cursor()
-            
-            # (อัปเดต Query) 
+
             base_query = "SELECT name, cover_img, volume_issue, id FROM product"
             where_clauses = []
             params = []
 
-            # 2.1 เพิ่ม Category filter
             if self.current_category != "ALL":
                 where_clauses.append("category = ?")
                 params.append(self.current_category)
-            
-            # 2.2 เพิ่ม Search filter (ค้นหาจาก 'name')
+
             if self.current_search_term:
                 where_clauses.append("name LIKE ?")
                 params.append(f"{self.current_search_term}%")
 
-            # 2.3 รวม WHERE clauses
             if where_clauses:
                 base_query += " WHERE " + " AND ".join(where_clauses)
-                
-            # 2.4 เพิ่ม Sort order
+
             if self.current_sort_order == "Newest":
                 base_query += " ORDER BY created_at DESC"
             elif self.current_sort_order == "Oldest":
                 base_query += " ORDER BY created_at ASC"
             elif self.current_sort_order == "A-Z":
                 base_query += " ORDER BY name ASC"
-                
-            # Debugging: พิมพ์ query ที่จะรัน
-            print(f"Executing Query: {base_query} with params: {tuple(params)}")
 
             cursor.execute(base_query, tuple(params))
             products = cursor.fetchall()
             conn.close()
 
-            # 3. แสดงผลข้อมูล
             if not products:
                 no_comics_label = QLabel(f"No comics found.")
                 no_comics_label.setObjectName("noComicsLabel")
                 no_comics_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
                 self.grid_layout.addWidget(no_comics_label, 0, 0)
-            
             else:
                 card_width = 200
-                card_height = 340 
+                card_height = 340
                 image_height = 250
-                # ปรับ name_height ให้สูงขึ้นสำหรับ Word Wrap (จาก 35 เป็น 50)
                 name_height = 50
                 volume_height = 25
-                
-                num_columns = 4 
+                num_columns = 4
 
                 for i, (name, cover_img_path, volume_issue, id) in enumerate(products):
                     row = i // num_columns
                     col = i % num_columns
 
-                    # เปลี่ยนจาก QFrame เป็น QPushButton เพื่อให้คลิกได้
-                    comic_card = QPushButton() 
+                    comic_card = QPushButton()
                     comic_card.setObjectName("comicCard")
                     comic_card.setFixedSize(card_width, card_height)
-                    comic_card.setCursor(Qt.CursorShape.PointingHandCursor) 
-                    
-                    # สร้าง Layout และใส่ลงใน QPushButton (comic_card)
-                    card_layout = QVBoxLayout(comic_card) 
-                    card_layout.setContentsMargins(5, 5, 5, 5) 
-                    card_layout.setSpacing(5) 
+                    comic_card.setCursor(Qt.CursorShape.PointingHandCursor)
 
-                    card_layout.addStretch(1) 
+                    card_layout = QVBoxLayout(comic_card)
+                    card_layout.setContentsMargins(5, 5, 5, 5)
+                    card_layout.setSpacing(5)
+                    card_layout.addStretch(1)
 
                     image_label = QLabel()
                     image_label.setObjectName("comicImage")
-                    image_label.setAlignment(Qt.AlignmentFlag.AlignCenter) 
-                    image_label.setFixedSize(card_width - 10, image_height) 
-                    
+                    image_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+                    image_label.setFixedSize(card_width - 10, image_height)
+
                     pixmap = None
                     if cover_img_path and os.path.exists(cover_img_path):
                         pixmap = QPixmap(cover_img_path)
                     else:
-                        print(f"คำเตือน: ไม่พบรูป comic '{cover_img_path}' สำหรับ '{name}'. ใช้ placeholder")
-                        pixmap = QPixmap("src/img/icon/profile.png") 
+                        pixmap = QPixmap("src/img/icon/profile.png")
                         if pixmap.isNull():
                             pixmap = QPixmap(card_width - 10, image_height)
                             pixmap.fill(Qt.GlobalColor.gray)
-                    
+
                     scaled_pixmap = pixmap.scaled(
-                        image_label.size(), 
-                        Qt.AspectRatioMode.KeepAspectRatio, 
+                        image_label.size(),
+                        Qt.AspectRatioMode.KeepAspectRatio,
                         Qt.TransformationMode.SmoothTransformation
                     )
                     image_label.setPixmap(scaled_pixmap)
-                    
-                    card_layout.addWidget(image_label)
-                    card_layout.addSpacing(10) # ช่องว่าง 10px ระหว่างรูปภาพกับชื่อ
 
-                    # --- (แก้ไขเพื่อรองรับ Word Wrap) ---
-                    name_label = QLabel() 
+                    card_layout.addWidget(image_label)
+                    card_layout.addSpacing(10)
+
+                    name_label = QLabel()
                     name_label.setObjectName("comicName")
                     name_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
                     name_label.setFixedHeight(name_height)
-                    
-                    # (สำคัญ) 1. เพิ่ม Tooltip เพื่อให้แสดงชื่อเต็มเมื่อ hover
-                    name_label.setToolTip(name) 
-                    
-                    # (เพิ่ม) 2. เปิดใช้งานการตัดคำ
-                    name_label.setWordWrap(True) 
-                    
-                    # (ตั้งค่า) 3. ตั้งค่าข้อความชื่อเต็ม (ไม่ต้องตัด)
-                    name_label.setText(name) 
-                    # --- (จบการแก้ไข) ---
+                    name_label.setToolTip(name)
+                    name_label.setWordWrap(True)
+                    name_label.setText(name)
 
                     volume_text = volume_issue if volume_issue else "N/A"
                     volume_label = QLabel(volume_text)
@@ -465,388 +597,1094 @@ class MainUserWindow(QMainWindow):
 
                     card_layout.addWidget(name_label)
                     card_layout.addWidget(volume_label)
-                    
-                    card_layout.addStretch(1) 
-                    
-                    # เชื่อมต่อ Clicked Signal กับฟังก์ชัน show_product_detail_page
-                    product_id = id 
+                    card_layout.addStretch(1)
+
                     comic_card.clicked.connect(
-                        lambda checked=False, p_id=product_id: self.show_product_detail_page(p_id)
+                        lambda checked=False, p_id=id: self.show_product_detail_page(p_id)
                     )
-                    
                     self.grid_layout.addWidget(comic_card, row, col, Qt.AlignmentFlag.AlignTop)
 
                 self.grid_layout.setRowStretch(len(products) // num_columns + 1, 1)
                 self.grid_layout.setColumnStretch(num_columns, 1)
 
-        except sqlite3.OperationalError as e:
-            print(f"เกิดข้อผิดพลาด SQL: {e}")
-            error_text = f"Error executing query: {e}\n"
-            if "no such column: id" in str(e):
-                error_text += "Please ensure the 'product' table has an 'id' column."
-            elif "no such column: created_at" in str(e):
-                error_text += "Please ensure the 'product' table has a 'created_at' column."
-            elif "no such column: category" in str(e):
-                error_text += "Please ensure the 'product' table has a 'category' column."
-            
-            error_label = QLabel(error_text)
-            error_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
-            self.grid_layout.addWidget(error_label, 0, 0)
-            
         except Exception as e:
             print(f"เกิดข้อผิดพลาดในการโหลด comics: {e}")
             error_label = QLabel(f"Error loading comics:\n{e}")
             error_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
             self.grid_layout.addWidget(error_label, 0, 0)
 
-    
-    # (!!! อัปเดตฟังก์ชันนี้ !!!)
-    # ฟังก์ชันสร้างหน้า UI สำหรับรายละเอียดสินค้า
+    # --- DETAIL PAGE ---
     def create_product_detail_page(self):
         detail_frame = QFrame()
         detail_frame.setObjectName("ProductDetailPage")
-        
-        # ใช้ Layout หลักเป็น QHBoxLayout เพื่อแบ่งซ้าย (รูป) ขวา (ข้อมูล)
         main_detail_layout = QHBoxLayout(detail_frame)
         main_detail_layout.setContentsMargins(350, 40, 40, 40)
         main_detail_layout.setSpacing(30)
-        # (!!! แก้ไข !!!) จัดทุกอย่างไปทางขวาใน layout หลัก
-        main_detail_layout.setAlignment(Qt.AlignmentFlag.AlignRight) 
-
-        # --- ส่วนด้านซ้าย (รูป) ---
-        # (!!! แก้ไข !!!) (เพิ่ม) addStretch เพื่อดันรูปไปทางขวา
-        main_detail_layout.addStretch(1) 
+        main_detail_layout.setAlignment(Qt.AlignmentFlag.AlignRight)
+        main_detail_layout.addStretch(1)
 
         self.detail_cover_label = QLabel("Loading image...")
         self.detail_cover_label.setObjectName("detailCover")
         self.detail_cover_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        # (!!! แก้ไข !!!) ลดขนาดรูปอีก
-        self.detail_cover_label.setFixedSize(250, 380) # ขนาดใหม่ที่เล็กลง
-        main_detail_layout.addWidget(self.detail_cover_label, 0, Qt.AlignmentFlag.AlignRight) # จัดรูปไปทางขวา
+        self.detail_cover_label.setFixedSize(250, 380)
+        main_detail_layout.addWidget(self.detail_cover_label, 0, Qt.AlignmentFlag.AlignRight)
 
-        # --- ส่วนด้านขวา (ข้อมูล) ---
-        # (!!! แก้ไข !!!) (เพิ่ม) addStretch เพื่อดัน widget ข้อมูลไปทางขวา (ถ้ามีพื้นที่เหลือ)
-        main_detail_layout.addStretch(1) 
+        main_detail_layout.addStretch(1)
 
         right_info_widget = QWidget()
-        # (!!! แก้ไข !!!) กำหนดความกว้างของ Widget ข้อมูล
-        right_info_widget.setFixedWidth(500) # กำหนดความกว้างของส่วนข้อมูล
+        right_info_widget.setFixedWidth(500)
         right_info_layout = QVBoxLayout(right_info_widget)
         right_info_layout.setContentsMargins(0, 0, 0, 0)
         right_info_layout.setSpacing(15)
-        # (!!! แก้ไข !!!) จัดชิดขวาในส่วนข้อมูล
-        right_info_layout.setAlignment(Qt.AlignmentFlag.AlignTop | Qt.AlignmentFlag.AlignRight) 
+        right_info_layout.setAlignment(Qt.AlignmentFlag.AlignTop | Qt.AlignmentFlag.AlignRight)
 
-        # ชื่อเรื่อง
         self.detail_name_label = QLabel("Product Name")
         self.detail_name_label.setObjectName("detailName")
         self.detail_name_label.setWordWrap(True)
-        # (!!! แก้ไข !!!) จัดชื่อชิดขวา
-        self.detail_name_label.setAlignment(Qt.AlignmentFlag.AlignLeft) 
+        self.detail_name_label.setAlignment(Qt.AlignmentFlag.AlignLeft)
         right_info_layout.addWidget(self.detail_name_label)
-        
-        # เส้นคั่น
+
         line = QFrame()
         line.setFrameShape(QFrame.Shape.HLine)
-        # (!!! แก้ไข !!!)
-        # แก้ไขจาก QFrame.Shape.Sunken เป็น QFrame.Shadow.Sunken
         line.setFrameShadow(QFrame.Shadow.Sunken)
         right_info_layout.addWidget(line)
 
-        # รายละเอียด (Description)
         self.detail_desc_label = QTextEdit()
         self.detail_desc_label.setObjectName("detailDescription")
         self.detail_desc_label.setReadOnly(True)
-        self.detail_desc_label.setText("Loading description...")
-        self.detail_desc_label.setFixedHeight(150) # จำกัดความสูง
+        self.detail_desc_label.setFixedHeight(150)
         right_info_layout.addWidget(self.detail_desc_label)
 
-        # ข้อมูลอื่นๆ (ใช้ QFormLayout)
         form_widget = QWidget()
         form_layout = QFormLayout(form_widget)
         form_layout.setSpacing(5)
-        # (!!! แก้ไข !!!) จัด Label ไปทางขวา
-        form_layout.setLabelAlignment(Qt.AlignmentFlag.AlignLeft) 
-        # (!!! แก้ไข !!!) (เพิ่ม) จัด Field ไปทางขวา
-        form_layout.setFormAlignment(Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter) 
-        
+        form_layout.setLabelAlignment(Qt.AlignmentFlag.AlignLeft)
+        form_layout.setFormAlignment(Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter)
+
         self.detail_volume_label = QLabel("N/A")
         self.detail_writer_label = QLabel("N/A")
         self.detail_rated_label = QLabel("N/A")
-        self.detail_isbn_label = QLabel("N/A") # เราจะยังใช้ตัวแปรนี้ แต่เปลี่ยนชื่อ Label
+        self.detail_isbn_label = QLabel("N/A")
         self.detail_stock_label = QLabel("N/A")
-        
-        for label in [self.detail_volume_label, self.detail_writer_label, 
+
+        for label in [self.detail_volume_label, self.detail_writer_label,
                       self.detail_rated_label, self.detail_isbn_label, self.detail_stock_label]:
-            
-            # (!!! เพิ่ม !!!) ตั้งชื่อ Style ให้เหมือนกัน
-            label.setObjectName("detailFormValue") 
-            
-            # (!!! แก้ไข !!!) เปลี่ยนจาก AlignRight เป็น AlignLeft
+            label.setObjectName("detailFormValue")
             label.setAlignment(Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter)
 
         form_rows_data = [
             ("Volume/Issue :", self.detail_volume_label),
             ("Writer :", self.detail_writer_label),
             ("Rated :", self.detail_rated_label),
-            ("ISBN :", self.detail_isbn_label), # ใช้ "ID :" ตามโค้ดเดิมของคุณ
+            ("ISBN :", self.detail_isbn_label),
             ("Stock :", self.detail_stock_label)
         ]
 
-        # วนลูปเพื่อสร้าง Label หัวข้อ, ตั้งชื่อให้มัน, แล้วค่อย addRow
         for label_text, value_widget in form_rows_data:
-            # สร้าง QLabel สำหรับหัวข้อ
             label_header = QLabel(label_text)
-            
-            # (!!! สำคัญ !!!) ตั้งชื่อ ObjectName สำหรับ "หัวข้อ"
-            label_header.setObjectName("detailFormLabel") 
-            
-            # Add เข้า Layout
+            label_header.setObjectName("detailFormLabel")
             form_layout.addRow(label_header, value_widget)
-        
+
         right_info_layout.addWidget(form_widget)
-        
-        # ราคา
+
         self.detail_price_label = QLabel("Price : 0.00 THB")
         self.detail_price_label.setObjectName("detailPrice")
-        # (!!! แก้ไข !!!) จัดชิดขวา
-        self.detail_price_label.setAlignment(Qt.AlignmentFlag.AlignRight) 
+        self.detail_price_label.setAlignment(Qt.AlignmentFlag.AlignRight)
         right_info_layout.addWidget(self.detail_price_label)
-        
-        # (!!! ใหม่ !!!) สร้าง Layout สำหรับปุ่ม Add to Cart และ Quantity
+
         cart_layout = QHBoxLayout()
         cart_layout.setSpacing(10)
-        cart_layout.setAlignment(Qt.AlignmentFlag.AlignRight) # จัดชิดขวา
+        cart_layout.setAlignment(Qt.AlignmentFlag.AlignRight)
 
-        # (!!! ใหม่ !!!) 1. Label
         quantity_label = QLabel("QUANTITY :")
-        quantity_label.setObjectName("quantityLabel") # สำหรับ QSS
+        quantity_label.setObjectName("quantityLabel")
         cart_layout.addWidget(quantity_label)
 
-        # (!!! ใหม่ !!!) 2. QSpinBox
         self.detail_quantity_spinbox = QSpinBox()
         self.detail_quantity_spinbox.setLocale(QLocale("en_US"))
-        self.detail_quantity_spinbox.setObjectName("quantitySpinBox") # สำหรับ QSS
-        self.detail_quantity_spinbox.setMinimum(1) # <<<< ลอจิก: ห้ามต่ำกว่า 1
-        self.detail_quantity_spinbox.setMaximum(99)  # <<<< (จะถูกอัปเดตโดย stock)
-        self.detail_quantity_spinbox.setValue(1)
-        self.detail_quantity_spinbox.setFixedWidth(60) # ขนาด
+        self.detail_quantity_spinbox.setObjectName("quantitySpinBox")
+        self.detail_quantity_spinbox.setMinimum(1)
+        self.detail_quantity_spinbox.setFixedWidth(60)
         cart_layout.addWidget(self.detail_quantity_spinbox)
-        
-        # (!!! แก้ไข !!!) 3. ปุ่ม Add to Cart (ย้ายมาใส่ใน cart_layout)
+
         self.detail_add_to_cart_button = QPushButton("Add to Cart")
         self.detail_add_to_cart_button.setObjectName("addToCartButton")
         self.detail_add_to_cart_button.setFixedHeight(60)
-        # (!!! ใหม่ !!!) เชื่อมต่อปุ่มกับฟังก์ชัน
-        self.detail_add_to_cart_button.clicked.connect(self.handle_add_to_cart) 
+        self.detail_add_to_cart_button.clicked.connect(self.handle_add_to_cart)
         cart_layout.addWidget(self.detail_add_to_cart_button)
 
-        # (!!! แก้ไข !!!) เพิ่ม cart_layout ลงใน right_info_layout
         right_info_layout.addLayout(cart_layout)
-        
-        right_info_layout.addStretch() # ดันทุกอย่างขึ้นไปด้านบน
-        
-        # (!!! แก้ไข !!!) จัด widget ข้อมูลไปทางขวา
-        main_detail_layout.addWidget(right_info_widget, 0, Qt.AlignmentFlag.AlignRight) 
+        right_info_layout.addStretch()
+        main_detail_layout.addWidget(right_info_widget, 0, Qt.AlignmentFlag.AlignRight)
 
         return detail_frame
 
-    # (!!! อัปเดตฟังก์ชันนี้ !!!)
-    # ฟังก์ชันสำหรับโหลดข้อมูลสินค้าจาก DB มาแสดง
-    # (!!! แก้ไข !!!) เปลี่ยน product_isbn เป็น product_id และแก้ไขการจัดการ Error
     def load_product_details(self, product_id):
-        # รีเซ็ต UI และสถานะก่อนโหลด
         self.detail_name_label.setText("Loading...")
         self.detail_desc_label.setText("Loading details...")
         self.detail_volume_label.setText("N/A")
         self.detail_writer_label.setText("N/A")
         self.detail_rated_label.setText("N/A")
-        self.detail_isbn_label.setText("N/A") 
+        self.detail_isbn_label.setText("N/A")
         self.detail_stock_label.setText("N/A")
         self.detail_price_label.setText("Price : N/A")
-        
-        # (!!! ใหม่ !!!) รีเซ็ตสถานะ
+
         self.current_detail_product_id = None
         self.current_detail_stock = 0
-        
-        # (!!! ใหม่ !!!) ปิดการใช้งานปุ่มและ spinbox ระหว่างรอโหลด
         self.detail_quantity_spinbox.setEnabled(False)
         self.detail_quantity_spinbox.setValue(1)
         self.detail_add_to_cart_button.setEnabled(False)
         self.detail_add_to_cart_button.setText("Loading...")
-        
-        # (เพิ่ม) ตั้งค่าพื้นหลังเป็นสีขาวทันที
+
         placeholder_pixmap = QPixmap(self.detail_cover_label.size())
         placeholder_pixmap.fill(Qt.GlobalColor.white)
         self.detail_cover_label.setPixmap(placeholder_pixmap)
-        
-        try:
-            if not os.path.exists(DB_PATH):
-                raise FileNotFoundError(f"Database not found at {DB_PATH}")
 
+        try:
             conn = sqlite3.connect(DB_PATH)
             cursor = conn.cursor()
-            
-            # (!!! แก้ไข !!!) เปลี่ยน isbn เป็น id ทั้งใน SELECT และ WHERE
             cursor.execute("""
-                SELECT name, description, volume_issue, writer, rated, id, stock, price, cover_img 
-                FROM product 
-                WHERE id = ?
+                SELECT name, description, volume_issue, writer, rated, id, stock, price, cover_img
+                FROM product WHERE id = ?
             """, (product_id,))
-            
             product_data = cursor.fetchone()
             conn.close()
 
             if product_data:
-                # (!!! แก้ไข !!!) เปลี่ยน isbn เป็น id
-                (name, description, volume_issue, writer, rated, 
+                (name, description, volume_issue, writer, rated,
                  id, stock, price, cover_img) = product_data
-                
-                # อัปเดต UI
+
                 self.detail_name_label.setText(name or "N/A")
                 self.detail_desc_label.setText(description or "No description available.")
                 self.detail_volume_label.setText(volume_issue or "N/A")
                 self.detail_writer_label.setText(writer or "N/A")
                 self.detail_rated_label.setText(rated or "N/A")
-                # (!!! แก้ไข !!!) เปลี่ยนเป็น str(id)
                 self.detail_isbn_label.setText(str(id) if id is not None else "N/A")
-                
-                # (!!! แก้ไข !!!) อัปเดต UI และเก็บค่า Stock
+
                 stock_available = stock if stock is not None else 0
                 self.detail_stock_label.setText(str(stock_available))
                 self.detail_price_label.setText(f"Price : {price:.2f} THB" if price is not None else "Price : N/A")
 
-                # (!!! ใหม่ !!!) อัปเดตสถานะสำหรับ Logic ตะกร้า
                 self.current_detail_product_id = id
                 self.current_detail_stock = stock_available
 
-                # (!!! ใหม่ !!!) ลอจิกสำคัญ: ควบคุม QSpinBox และปุ่ม Add to Cart
                 if stock_available > 0:
-                    self.detail_quantity_spinbox.setMaximum(stock_available) # <<<< ตั้งค่า Max ตาม Stock
-                    self.detail_quantity_spinbox.setValue(1) # รีเซ็ตเป็น 1
+                    self.detail_quantity_spinbox.setMaximum(stock_available)
+                    self.detail_quantity_spinbox.setValue(1)
                     self.detail_quantity_spinbox.setEnabled(True)
                     self.detail_add_to_cart_button.setEnabled(True)
                     self.detail_add_to_cart_button.setText("Add to Cart")
                 else:
-                    # ถ้า Stock = 0
                     self.detail_quantity_spinbox.setMaximum(0)
                     self.detail_quantity_spinbox.setValue(0)
                     self.detail_quantity_spinbox.setEnabled(False)
                     self.detail_add_to_cart_button.setEnabled(False)
                     self.detail_add_to_cart_button.setText("Out of Stock")
 
-                # โหลดรูปภาพปก
                 pixmap = None
                 if cover_img and os.path.exists(cover_img):
                     pixmap = QPixmap(cover_img)
                 else:
-                    print(f"คำเตือน: ไม่พบรูป detail '{cover_img}' สำหรับ ID {product_id}. ใช้ placeholder")
-                    pixmap = QPixmap("src/img/icon/profile.png") 
-                
+                    pixmap = QPixmap("src/img/icon/profile.png")
+
                 if pixmap.isNull():
                     pixmap = QPixmap(self.detail_cover_label.size())
-                    pixmap.fill(Qt.GlobalColor.gray) # ถ้า placeholder ก็ยังโหลดไม่ได้ ก็ใช้สีเทา
+                    pixmap.fill(Qt.GlobalColor.gray)
 
-                # สเกลรูปภาพให้พอดีกับ Label
                 scaled_pixmap = pixmap.scaled(
                     self.detail_cover_label.size(),
                     Qt.AspectRatioMode.KeepAspectRatio,
                     Qt.TransformationMode.SmoothTransformation
                 )
                 self.detail_cover_label.setPixmap(scaled_pixmap)
-
             else:
-                # (!!! แก้ไข !!!) ไม่โยน Exception แต่แสดงข้อความแจ้งเตือน
                 self.detail_name_label.setText("Product Not Found")
-                self.detail_desc_label.setText(f"No product with ID '{product_id}' was found in the database.")
-                # ตั้งรูปเป็น placeholder สีขาว
-                pixmap = QPixmap(self.detail_cover_label.size())
-                pixmap.fill(Qt.GlobalColor.white) # พื้นหลังขาว
-                self.detail_cover_label.setPixmap(pixmap)
-                print(f"ไม่พบสินค้าที่มี ID: {product_id}")
-                
-                # (!!! ใหม่ !!!) ปิดการใช้งานปุ่มหากไม่พบสินค้า
+                self.detail_desc_label.setText(f"No product with ID '{product_id}' was found.")
                 self.detail_quantity_spinbox.setEnabled(False)
                 self.detail_add_to_cart_button.setEnabled(False)
                 self.detail_add_to_cart_button.setText("Unavailable")
 
-
         except Exception as e:
-            # (!!! แก้ไข !!!) ไม่โยน Exception แต่แสดงข้อความแจ้งเตือน
-            print(f"เกิดข้อผิดพลาดในการโหลดรายละเอียดสินค้า (ID: {product_id}): {e}")
+            print(f"เกิดข้อผิดพลาดในการโหลดรายละเอียดสินค้า: {e}")
             self.detail_name_label.setText(f"Error Loading Product")
-            self.detail_desc_label.setText(f"An error occurred: {e}. Please try again or check the database.")
-            pixmap = QPixmap(self.detail_cover_label.size())
-            pixmap.fill(Qt.GlobalColor.lightGray) # สำหรับ Error ทั่วไปใช้สีเทาอ่อน
-            self.detail_cover_label.setPixmap(pixmap)
-            
-            # (!!! ใหม่ !!!) ปิดการใช้งานปุ่มหากเกิด Error
-            self.detail_quantity_spinbox.setEnabled(False)
-            self.detail_add_to_cart_button.setEnabled(False)
             self.detail_add_to_cart_button.setText("Error")
 
-
-    # (!!! ใหม่ !!!)
-    # ฟังก์ชันสำหรับสลับไปหน้า Product Detail
-    # (!!! แก้ไข !!!) เปลี่ยน product_isbn เป็น product_id
     def show_product_detail_page(self, product_id):
-        # (!!! แก้ไข !!!) อัปเดตข้อความ Print
-        print(f"กำลังแสดงรายละเอียดสำหรับ ID: {product_id}")
-        
-        # 1. โหลดข้อมูลมาก่อน
-        # (!!! แก้ไข !!!) ส่ง product_id
         self.load_product_details(product_id)
-        
-        # 2. สลับ Stacked Widgets ไปยัง Index 2 (หน้าที่เราเพิ่มเข้าไปใหม่)
         self.sidebar_stack.setCurrentIndex(2)
         self.main_content_stack.setCurrentIndex(2)
-        
-    # (!!! ใหม่ !!!)
-    # ฟังก์ชันสำหรับจัดการการกดปุ่ม Add to Cart
+
     def handle_add_to_cart(self):
-        # 1. ดึงข้อมูลจากสถานะ
         quantity = self.detail_quantity_spinbox.value()
         product_id = self.current_detail_product_id
         stock = self.current_detail_stock
 
-        # 2. ตรวจสอบ Validation (แม้ว่า UI จะป้องกันไว้แล้วก็ตาม)
-        if product_id is None:
-            QMessageBox.warning(self, "Error", "No product selected or product is unavailable.")
+        if product_id is None or quantity <= 0:
+            QMessageBox.warning(self, "Error", "Invalid product or quantity.")
             return
-
-        if quantity <= 0:
-            QMessageBox.warning(self, "Invalid Quantity", "Quantity must be at least 1.")
-            return
-        
-        # (ลอจิกสำคัญ) ตรวจสอบ Stock
         if quantity > stock:
-            QMessageBox.warning(self, "Stock Exceeded", 
-                                f"Sorry, only {stock} items are available.\n"
-                                f"Please adjust the quantity.")
-            # (ปรับปรุง UX) ตั้งค่า spinbox กลับไปที่ค่า max
-            self.detail_quantity_spinbox.setValue(stock) 
+            QMessageBox.warning(self, "Stock Error", "Not enough stock available.")
             return
 
-        # 3. (ณ ตอนนี้) แสดงผลลัพธ์
-        # (อนาคต) ตรงนี้คือส่วนที่คุณจะเพิ่ม Logic การเพิ่มลงใน DB ตะกร้า
-        print("--- 🛒 ADD TO CART ---")
-        print(f"    User: {self.current_username}")
-        print(f"    Product ID: {product_id}")
-        print(f"    Product Name: {self.detail_name_label.text()}")
-        print(f"    Quantity: {quantity}")
-        print("-----------------------")
-        
-        QMessageBox.information(self, "Success", 
-                                f"Added {quantity} x '{self.detail_name_label.text()}' to your cart.")
-        
-        # (UX) รีเซ็ตค่ากลับเป็น 1
-        self.detail_quantity_spinbox.setValue(1)
+        try:
+            conn = sqlite3.connect(DB_PATH)
+            cursor = conn.cursor()
 
+            cursor.execute("SELECT quantity FROM cart WHERE user_id = ? AND product_id = ?",
+                           (self.current_username, product_id))
+            existing_item = cursor.fetchone()
 
+            if existing_item:
+                new_qty = existing_item[0] + quantity
+                if new_qty > stock:
+                    new_qty = stock
+                    QMessageBox.information(self, "Stock Limited", f"Adjusted total quantity to max stock ({stock}).")
+                cursor.execute("UPDATE cart SET quantity = ? WHERE user_id = ? AND product_id = ?",
+                               (new_qty, self.current_username, product_id))
+            else:
+                cursor.execute("INSERT INTO cart (user_id, product_id, quantity) VALUES (?, ?, ?)",
+                               (self.current_username, product_id, quantity))
+
+            conn.commit()
+            conn.close()
+            QMessageBox.information(self, "Success", f"Added to cart successfully!")
+            self.detail_quantity_spinbox.setValue(1)
+
+        except Exception as e:
+            print(f"Database Error (Add to Cart): {e}")
+            QMessageBox.critical(self, "Error", f"Could not add to cart: {e}")
+
+    # --- CART PAGE ---
+    def create_cart_page(self):
+        cart_frame = QFrame()
+        main_layout = QVBoxLayout(cart_frame)
+        main_layout.setContentsMargins(250, 10, 20, 40)
+        main_layout.setSpacing(10)
+
+        self.cart_table = QTableWidget()
+        self.cart_table.setObjectName("cartTable")
+        self.cart_table.setColumnCount(5)
+        self.cart_table.setHorizontalHeaderLabels(["ITEM", "UNIT PRICE", "QUANTITY", "AMOUNT", "DEL?"])
+
+        header = self.cart_table.horizontalHeader()
+        header.setSectionResizeMode(0, QHeaderView.ResizeMode.Stretch)
+        header.setSectionResizeMode(1, QHeaderView.ResizeMode.ResizeToContents)
+        header.setSectionResizeMode(2, QHeaderView.ResizeMode.ResizeToContents)
+        header.setSectionResizeMode(3, QHeaderView.ResizeMode.ResizeToContents)
+        header.setSectionResizeMode(4, QHeaderView.ResizeMode.Fixed)
+        self.cart_table.setColumnWidth(4, 60)
+
+        self.cart_table.verticalHeader().setVisible(False)
+        self.cart_table.setSelectionMode(QAbstractItemView.SelectionMode.NoSelection)
+        self.cart_table.setFocusPolicy(Qt.FocusPolicy.NoFocus)
+
+        main_layout.addWidget(self.cart_table, 1)
+
+        footer_widget = QWidget()
+        footer_layout = QVBoxLayout(footer_widget)
+        footer_layout.setAlignment(Qt.AlignmentFlag.AlignRight)
+        footer_layout.setSpacing(10)
+
+        def create_summary_row(text, value_label_obj_name="cartSummaryValue", is_total=False):
+            row_widget = QWidget()
+            row_layout = QHBoxLayout(row_widget)
+            row_layout.setContentsMargins(0, 0, 0, 0)
+            row_layout.setAlignment(Qt.AlignmentFlag.AlignRight)
+
+            label_title = QLabel(text)
+            label_title.setObjectName("cartSummaryLabel")
+            label_title.setAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
+
+            label_value = QLabel("0.00 THB")
+            label_value.setObjectName(value_label_obj_name)
+            if is_total:
+                label_value.setMinimumWidth(200)
+            else:
+                label_value.setFixedWidth(150)
+            label_value.setAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
+
+            row_layout.addWidget(label_title)
+            row_layout.addWidget(label_value)
+            return row_widget, label_value
+
+        row_sub, self.subtotal_label = create_summary_row("Subtotal :")
+        row_ship, self.shipping_label = create_summary_row("Shipping :")
+        row_vat, self.vat_label = create_summary_row("VAT 7% :")
+        row_total, self.total_label = create_summary_row("Total :", "cartTotalValue", is_total=True)
+
+        footer_layout.addWidget(row_sub)  # SUBTOTAL
+        footer_layout.addWidget(row_ship)  # SHIPPING
+        footer_layout.addWidget(row_vat)  # VAT
+        # --- เส้นคั่นสีดำ ---
+        line = QFrame()
+        line.setFrameShape(QFrame.Shape.HLine)
+        line.setFrameShadow(QFrame.Shadow.Plain)
+        line.setFixedWidth(300)
+        line.setStyleSheet("background-color: #000000; max-height: 1px; margin: 10px 0;")
+        footer_layout.addWidget(line)
+        footer_layout.addWidget(line, alignment=Qt.AlignmentFlag.AlignRight)
+
+        footer_layout.addWidget(row_total)  # TOTAL
+
+        self.checkout_button = QPushButton("Check out")
+        self.checkout_button.setObjectName("checkoutButton")
+        self.checkout_button.setFixedSize(200, 50)
+        self.checkout_button.clicked.connect(self.show_checkout_page)
+
+        checkout_container = QHBoxLayout()
+        checkout_container.addStretch()
+        checkout_container.addWidget(self.checkout_button)
+
+        footer_layout.addSpacing(20)
+        footer_layout.addLayout(checkout_container)
+        main_layout.addWidget(footer_widget)
+
+        return cart_frame
+
+    def show_cart_page(self):
+        self.load_cart_data()
+        self.sidebar_stack.setCurrentIndex(3)
+        self.main_content_stack.setCurrentIndex(3)
+
+    def load_cart_data(self):
+        self.cart_table.setRowCount(0)
+        try:
+            conn = sqlite3.connect(DB_PATH)
+            cursor = conn.cursor()
+            query = """
+                SELECT p.id, p.name, p.cover_img, p.price, c.quantity, p.stock
+                FROM cart c
+                JOIN product p ON c.product_id = p.id
+                WHERE c.user_id = ?
+            """
+            cursor.execute(query, (self.current_username,))
+            cart_items = cursor.fetchall()
+            conn.close()
+
+            self.cart_table.setRowCount(len(cart_items))
+
+            for row_idx, (p_id, p_name, p_img, p_price, c_qty, p_stock) in enumerate(cart_items):
+                item_widget = QWidget()
+                item_layout = QHBoxLayout(item_widget)
+                item_layout.setContentsMargins(5, 5, 5, 5)
+
+                img_label = QLabel()
+                img_label.setFixedSize(60, 90)
+                img_label.setScaledContents(True)
+                if p_img and os.path.exists(p_img):
+                    img_label.setPixmap(QPixmap(p_img))
+                else:
+                    img_label.setPixmap(QPixmap("src/img/icon/profile.png"))
+
+                name_label = QLabel(p_name)
+                name_label.setWordWrap(True)
+                name_label.setObjectName("cartItemName")
+
+                item_layout.addWidget(img_label)
+                item_layout.addWidget(name_label)
+                self.cart_table.setCellWidget(row_idx, 0, item_widget)
+
+                price_item = QTableWidgetItem(f"{p_price:.2f} THB")
+                price_item.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
+                price_item.setFlags(Qt.ItemFlag.ItemIsEnabled | Qt.ItemFlag.ItemIsSelectable)
+                price_item.setData(Qt.ItemDataRole.UserRole, p_id)
+                self.cart_table.setItem(row_idx, 1, price_item)
+
+                qty_spinbox = QSpinBox()
+                qty_spinbox.setLocale(QLocale(QLocale.Language.English, QLocale.Country.UnitedStates))
+                qty_spinbox.setRange(1, p_stock if p_stock > 0 else 1)
+                qty_spinbox.setValue(c_qty)
+                qty_spinbox.setAlignment(Qt.AlignmentFlag.AlignCenter)
+                qty_spinbox.setFixedWidth(80)
+                qty_spinbox.valueChanged.connect(lambda val, pid=p_id: self.update_cart_quantity(pid, val))
+
+                qty_container = QWidget()
+                qty_layout = QHBoxLayout(qty_container)
+                qty_layout.setAlignment(Qt.AlignmentFlag.AlignCenter)
+                qty_layout.setContentsMargins(0, 0, 0, 0)
+                qty_layout.addWidget(qty_spinbox)
+                self.cart_table.setCellWidget(row_idx, 2, qty_container)
+
+                amount = p_price * c_qty
+                amount_item = QTableWidgetItem(f"{amount:.2f} THB")
+                amount_item.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
+                amount_item.setFlags(Qt.ItemFlag.ItemIsEnabled | Qt.ItemFlag.ItemIsSelectable)
+                self.cart_table.setItem(row_idx, 3, amount_item)
+
+                del_btn = QPushButton()
+                del_btn.setFixedSize(30, 30)
+                del_btn.setCursor(Qt.CursorShape.PointingHandCursor)
+                if os.path.exists("src/img/icon/delete.png"):
+                    del_btn.setIcon(QIcon("src/img/icon/delete.png"))
+                else:
+                    del_btn.setText("X")
+                del_btn.clicked.connect(lambda checked=False, pid=p_id: self.delete_cart_item(pid))
+
+                del_container = QWidget()
+                del_layout = QHBoxLayout(del_container)
+                del_layout.setAlignment(Qt.AlignmentFlag.AlignCenter)
+                del_layout.setContentsMargins(0, 0, 0, 0)
+                del_layout.addWidget(del_btn)
+                self.cart_table.setCellWidget(row_idx, 4, del_container)
+
+                self.cart_table.setRowHeight(row_idx, 100)
+
+            self.update_cart_totals()
+
+        except Exception as e:
+            print(f"Error loading cart: {e}")
+
+    def update_cart_quantity(self, product_id, new_quantity):
+        try:
+            conn = sqlite3.connect(DB_PATH)
+            cursor = conn.cursor()
+            cursor.execute("UPDATE cart SET quantity = ? WHERE user_id = ? AND product_id = ?",
+                           (new_quantity, self.current_username, product_id))
+            conn.commit()
+            conn.close()
+        except Exception as e:
+            print(f"Error updating cart quantity: {e}")
+            return
+
+        for row in range(self.cart_table.rowCount()):
+            price_item = self.cart_table.item(row, 1)
+            if price_item and price_item.data(Qt.ItemDataRole.UserRole) == product_id:
+                unit_price_text = price_item.text().replace(" THB", "").replace(",", "").strip()
+                unit_price = float(unit_price_text)
+                new_amount = unit_price * new_quantity
+                amount_item = self.cart_table.item(row, 3)
+                if amount_item:
+                    amount_item.setText(f"{new_amount:,.2f} THB")
+                break
+        self.update_cart_totals()
+
+    def delete_cart_item(self, product_id):
+        reply = QMessageBox.question(self, 'Confirm Delete', 'Remove this item from cart?',
+                                     QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No)
+        if reply == QMessageBox.StandardButton.Yes:
+            try:
+                conn = sqlite3.connect(DB_PATH)
+                cursor = conn.cursor()
+                cursor.execute("DELETE FROM cart WHERE user_id = ? AND product_id = ?",
+                               (self.current_username, product_id))
+                conn.commit()
+                conn.close()
+                self.load_cart_data()
+            except Exception as e:
+                print(f"Error deleting cart item: {e}")
+
+    def update_cart_totals(self):
+        subtotal = 0.0
+        for row in range(self.cart_table.rowCount()):
+            item = self.cart_table.item(row, 3)
+            if item:
+                text = item.text().replace(" THB", "").replace(",", "").strip()
+                try:
+                    subtotal += float(text)
+                except ValueError:
+                    pass
+
+        shipping = 80.0 if subtotal > 0 else 0.0
+        vat = subtotal * 0.07
+        total = subtotal + shipping + vat
+
+        self.subtotal_label.setText(f"{subtotal:,.2f} THB")
+        self.shipping_label.setText(f"{shipping:,.2f} THB")
+        self.vat_label.setText(f"{vat:,.2f} THB")
+        self.total_label.setText(f"{total:,.2f} THB")
+
+    # --- CHECKOUT PAGE ---
+    def create_checkout_page(self):
+        checkout_frame = QFrame()
+        main_layout = QVBoxLayout(checkout_frame)
+        main_layout.setContentsMargins(250, 0, 50, 40)
+        main_layout.setSpacing(30)
+
+        top_content_widget = QWidget()
+        top_content_layout = QHBoxLayout(top_content_widget)
+        top_content_layout.setSpacing(40)
+
+        left_qr_widget = QWidget()
+        left_qr_layout = QVBoxLayout(left_qr_widget)
+        left_qr_layout.setAlignment(Qt.AlignmentFlag.AlignTop | Qt.AlignmentFlag.AlignCenter)
+
+        qr_title = QLabel("Scan to Pay")
+        qr_title.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        qr_title.setObjectName("qrTitleLabel")
+
+        self.qr_code_label = QLabel()
+        self.qr_code_label.setFixedSize(350, 450)
+        self.qr_code_label.setScaledContents(True)
+        self.qr_code_label.setObjectName("qrCodeLabel")
+        self.qr_code_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.qr_code_path = "src/img/icon/qrcodekbank.jpg"
+
+        if os.path.exists(self.qr_code_path):
+            self.qr_code_label.setPixmap(QPixmap(self.qr_code_path))
+        else:
+            self.qr_code_label.setText("QR Code Not Found\n(Please check path)")
+            self.qr_code_label.setStyleSheet("border: 2px dashed #aaa; color: #aaa; font-size: 16px;")
+
+        left_qr_layout.addWidget(qr_title)
+        left_qr_layout.addWidget(self.qr_code_label)
+        left_qr_layout.addStretch()
+
+        right_content_widget = QWidget()
+        right_content_layout = QVBoxLayout(right_content_widget)
+        right_content_layout.setContentsMargins(0, 20, 0, 0)
+        right_content_layout.setSpacing(25)
+        right_content_layout.setAlignment(Qt.AlignmentFlag.AlignTop)
+
+        upload_label = QLabel("Upload Receipt")
+        upload_label.setObjectName("uploadlabel")
+        right_content_layout.addWidget(upload_label)
+
+        upload_container = QHBoxLayout()
+        upload_container.setSpacing(10)
+
+        self.slip_path_field = QLineEdit()
+        self.slip_path_field.setPlaceholderText(" Select Receipt image...")
+        self.slip_path_field.setReadOnly(True)
+        self.slip_path_field.setFixedHeight(45)
+        self.slip_path_field.setObjectName("slipPathField")
+
+        self.upload_slip_button = QPushButton()
+        self.upload_slip_button.setFixedSize(50, 45)
+        self.upload_slip_button.setObjectName("uploadSlipButton")
+        try:
+            self.upload_slip_button.setIcon(QIcon("src/img/icon/upload.png"))
+            self.upload_slip_button.setIconSize(QSize(28, 28))
+        except:
+            self.upload_slip_button.setText("UP")
+        self.upload_slip_button.setCursor(Qt.CursorShape.PointingHandCursor)
+        self.upload_slip_button.clicked.connect(self.select_slip_image)
+
+        upload_container.addWidget(self.slip_path_field)
+        upload_container.addWidget(self.upload_slip_button)
+        right_content_layout.addLayout(upload_container)
+
+        instructions = """ขั้นตอนการโอนเงิน
+1.) สแกน QR Code ทางด้านซ้ายมือ
+2.) โอนเงินจากยอดรวมทั้งหมด (Total)
+3.) อัพโหลดรูปภาพ ใบเสร็จของการโอนเงินครั้งนี้
+4.) กดปุ่ม Payment เพื่อยืนยันการโอนเงินและรอตรวจสอบ"""
+        instruction_label = QLabel(instructions)
+        instruction_label.setObjectName("instructionLabel")
+        right_content_layout.addWidget(instruction_label)
+
+        right_content_layout.addStretch(1)
+
+        summary_container = QWidget()
+        summary_layout = QVBoxLayout(summary_container)
+        summary_layout.setAlignment(Qt.AlignmentFlag.AlignRight)
+        summary_layout.setSpacing(8)
+
+        def create_checkout_summary_row(text, row_type):
+            row_widget = QWidget()
+            row_layout = QHBoxLayout(row_widget)
+            row_layout.setContentsMargins(0, 0, 0, 0)
+            row_layout.setAlignment(Qt.AlignmentFlag.AlignRight)
+
+            label_title = QLabel(text)
+            label_title.setAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
+            label_title.setObjectName(f"checkout{row_type}Title")
+
+            label_value = QLabel("... THB")
+            label_value.setMinimumWidth(160)
+            label_value.setAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
+            label_value.setObjectName(f"checkout{row_type}Value")
+
+            row_layout.addWidget(label_title)
+            row_layout.addWidget(label_value)
+            return row_widget, label_value
+
+        row_sub, self.checkout_subtotal_label = create_checkout_summary_row("Subtotal : ", "Subtotal")
+        row_ship, self.checkout_shipping_label = create_checkout_summary_row("Shipping : ", "Shipping")
+        row_vat, self.checkout_vat_label = create_checkout_summary_row("VAT 7% : ", "Vat")
+        row_tot, self.checkout_total_label = create_checkout_summary_row("Total : ", "Total")
+
+        summary_layout.addWidget(row_sub)
+        summary_layout.addWidget(row_ship)
+        summary_layout.addWidget(row_vat)
+
+        line = QFrame()
+        line.setFrameShape(QFrame.Shape.HLine)
+        line.setFrameShadow(QFrame.Shadow.Sunken)
+        line.setStyleSheet("color: #ccc; margin: 5px 0;")
+        summary_layout.addWidget(line)
+
+        summary_layout.addWidget(row_tot)
+        right_content_layout.addWidget(summary_container)
+
+        top_content_layout.addWidget(left_qr_widget, 45)
+        top_content_layout.addWidget(right_content_widget, 55)
+
+        main_layout.addWidget(top_content_widget, 1)
+
+        bottom_buttons_container = QWidget()
+        bottom_buttons_layout = QHBoxLayout(bottom_buttons_container)
+        bottom_buttons_layout.setContentsMargins(0, 20, 0, 0)
+
+        self.checkout_back_button = QPushButton("Back to Cart")
+        self.checkout_back_button.setFixedHeight(50)
+        self.checkout_back_button.setMinimumWidth(150)
+        self.checkout_back_button.setObjectName("checkoutBackButton")
+        self.checkout_back_button.clicked.connect(self.show_cart_page)
+
+        self.payment_button = QPushButton("Payment")
+        self.payment_button.setFixedHeight(50)
+        self.payment_button.setMinimumWidth(180)
+        self.payment_button.setEnabled(False)
+        self.payment_button.setObjectName("confirmPaymentButton")
+        self.payment_button.clicked.connect(self.handle_payment)
+
+        bottom_buttons_layout.addWidget(self.checkout_back_button, alignment=Qt.AlignmentFlag.AlignLeft)
+        bottom_buttons_layout.addStretch(1)
+        bottom_buttons_layout.addWidget(self.payment_button, alignment=Qt.AlignmentFlag.AlignRight)
+
+        main_layout.addWidget(bottom_buttons_container, 0)
+
+        return checkout_frame
+
+    def show_checkout_page(self):
+        if self.cart_table.rowCount() == 0:
+            QMessageBox.warning(self, "Cart Empty", "Your cart is empty.")
+            return
+
+        subtotal = 0.0
+        try:
+            conn = sqlite3.connect(DB_PATH)
+            cursor = conn.cursor()
+            cursor.execute("""
+                SELECT SUM(p.price * c.quantity)
+                FROM cart c
+                JOIN product p ON c.product_id = p.id
+                WHERE c.user_id = ?
+            """, (self.current_username,))
+            result = cursor.fetchone()
+            if result and result[0] is not None:
+                subtotal = float(result[0])
+            conn.close()
+        except Exception as e:
+            print(f"Error calculating checkout total: {e}")
+
+        shipping = 80.0 if subtotal > 0 else 0.0
+        vat = subtotal * 0.07
+        total = subtotal + shipping + vat
+
+        self.checkout_subtotal_label.setText(f"{subtotal:,.2f} THB")
+        self.checkout_shipping_label.setText(f"{shipping:,.2f} THB")
+        self.checkout_vat_label.setText(f"{vat:,.2f} THB")
+        self.checkout_total_label.setText(f"{total:,.2f} THB")
+
+        self.current_slip_path = None
+        self.slip_path_field.clear()
+        self.payment_button.setEnabled(False)
+
+        self.sidebar_stack.setCurrentIndex(4)
+        self.main_content_stack.setCurrentIndex(4)
+
+    def select_slip_image(self):
+        file_path, _ = QFileDialog.getOpenFileName(
+            self,
+            "Select Payment Slip",
+            "",
+            "Images (*.png *.jpg *.jpeg *.bmp)"
+        )
+
+        if file_path:
+            self.current_slip_path = os.path.normpath(file_path)
+            self.slip_path_field.setText(os.path.basename(self.current_slip_path))
+            self.payment_button.setEnabled(True)
+
+    def handle_payment(self):
+        try:
+            conn = sqlite3.connect(DB_PATH)
+            cursor = conn.cursor()
+            # ดึงข้อมูลที่จำเป็นต้องตรวจสอบ
+            cursor.execute("""
+                SELECT first_name, last_name, email, phone, address
+                FROM users WHERE username = ?
+            """, (self.current_username,))
+            user_data = cursor.fetchone()
+            conn.close()
+
+            if user_data:
+                # user_data จะเก็บ tuple ของ (first_name, last_name, email, phone, address)
+                # ตรวจสอบว่ามีค่าใดเป็น None หรือ ค่าว่าง "" หรือไม่
+                # (str(field).strip() ช่วยเช็คกรณีที่เป็น space bar อย่างเดียวด้วย)
+                is_profile_complete = all(field and str(field).strip() for field in user_data)
+
+                if not is_profile_complete:
+                    QMessageBox.warning(
+                        self,
+                        "Profile Incomplete",
+                        "ไม่สามารถชำระเงินได้\n\nกรุณากรอกข้อมูลโปรไฟล์ให้ครบถ้วนก่อนทำรายการ\n(ชื่อ, นามสกุล, อีเมล, เบอร์โทรศัพท์ และที่อยู่)"
+                    )
+                    # บังคับเด้งไปหน้า Profile เพื่อให้กรอกข้อมูล
+                    self.show_profile_page()
+                    # (Optional) ถ้าอยากให้เข้าโหมดแก้ไขเลย ให้ uncomment บรรทัดล่างนี้
+                    # self.toggle_edit_mode()
+                    return
+            else:
+                QMessageBox.critical(self, "Error", "ไม่พบฐานข้อมูลผู้ใช้")
+                return
+
+        except Exception as e:
+            print(f"Database Error (Profile Check): {e}")
+            QMessageBox.critical(self, "Error", f"เกิดข้อผิดพลาดในการตรวจสอบโปรไฟล์: {e}")
+            return
+        # ------------------------------------------------
+
+        subtotal = 0.0
+        try:
+            conn = sqlite3.connect(DB_PATH)
+            cursor = conn.cursor()
+            cursor.execute("""
+                SELECT SUM(p.price * c.quantity)
+                FROM cart c JOIN product p ON c.product_id = p.id
+                WHERE c.user_id = ?
+            """, (self.current_username,))
+            result = cursor.fetchone()
+            if result and result[0]:
+                subtotal = float(result[0])
+            conn.close()
+        except Exception as e:
+            print(f"Error calculating subtotal for order: {e}")
+            return
+
+        shipping_fee = 80.0 if subtotal > 0 else 0.0
+        vat = subtotal * 0.07
+        total = subtotal + shipping_fee + vat
+
+        current_date = datetime.now().strftime("%d-%b-%Y %H:%M")
+
+        try:
+            conn = sqlite3.connect(DB_PATH)
+            cursor = conn.cursor()
+
+            # 1. ดึงรายการสินค้าในตะกร้า พร้อมราคาปัจจุบัน
+            cursor.execute("""
+                SELECT c.product_id, c.quantity, p.price
+                FROM cart c
+                JOIN product p ON c.product_id = p.id
+                WHERE c.user_id = ?
+            """, (self.current_username,))
+            cart_items_full = cursor.fetchall()
+
+            if not cart_items_full:
+                QMessageBox.warning(self, "Error", "Cart is empty.")
+                conn.close()
+                return
+
+            # 2. Insert ลงตาราง orders
+            cursor.execute("""
+                INSERT INTO orders (user_id, order_date, status, subtotal, vat, shipping_fee, total, slip_image)
+                VALUES (?, ?, 'pending', ?, ?, ?, ?, ?)
+            """, (self.current_username, current_date, subtotal, vat, shipping_fee, total, self.current_slip_path))
+
+            new_order_id = cursor.lastrowid
+
+            # 3. Insert ลงตาราง order_items และตัดสต็อก
+            for product_id, quantity, unit_price in cart_items_full:
+                cursor.execute("""
+                    INSERT INTO order_items (order_id, product_id, quantity, unit_price)
+                    VALUES (?, ?, ?, ?)
+                """, (new_order_id, product_id, quantity, unit_price))
+
+                cursor.execute("""
+                    UPDATE product
+                    SET stock = MAX(0, stock - ?)
+                    WHERE id = ?
+                """, (quantity, product_id))
+
+            # 4. ล้างตะกร้า
+            cursor.execute("DELETE FROM cart WHERE user_id = ?", (self.current_username,))
+
+            conn.commit()
+            conn.close()
+
+            QMessageBox.information(self, "Payment Success", "Your order has been placed successfully!")
+            self.show_orders_page()
+
+        except Exception as e:
+            print(f"Database Error (Payment): {e}")
+            QMessageBox.critical(self, "Payment Error", f"Could not process payment: {e}")
+
+    # --- ORDERS PAGE ---
+    def create_orders_page(self):
+        page_frame = QFrame()
+        page_frame.setObjectName("OrdersPage")
+        main_layout = QVBoxLayout(page_frame)
+        main_layout.setContentsMargins(250, 40, 50, 40)
+        main_layout.setSpacing(20)
+
+        self.orders_table = QTableWidget()
+        self.orders_table.setObjectName("ordersTable")
+        self.orders_table.setColumnCount(2)
+        self.orders_table.setHorizontalHeaderLabels(["My Orders (Click for details)", "STATUS"])
+
+        header = self.orders_table.horizontalHeader()
+        header.setSectionResizeMode(0, QHeaderView.ResizeMode.Stretch)
+        header.setSectionResizeMode(1, QHeaderView.ResizeMode.Fixed)
+        self.orders_table.setColumnWidth(1, 200)
+
+        self.orders_table.verticalHeader().setVisible(False)
+        self.orders_table.setSelectionMode(QAbstractItemView.SelectionMode.SingleSelection)
+        self.orders_table.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows)
+        self.orders_table.setFocusPolicy(Qt.FocusPolicy.NoFocus)
+        self.orders_table.setShowGrid(True)
+
+        self.orders_table.cellClicked.connect(self.on_order_clicked)
+
+        main_layout.addWidget(self.orders_table)
+
+        return page_frame
+
+    def show_orders_page(self):
+        self.load_orders_data()
+        self.sidebar_stack.setCurrentIndex(5)
+        self.main_content_stack.setCurrentIndex(5)
+
+    def load_orders_data(self):
+        self.orders_table.setRowCount(0)
+        try:
+            conn = sqlite3.connect(DB_PATH)
+            cursor = conn.cursor()
+            cursor.execute("""
+                SELECT order_id, order_date, status FROM orders
+                WHERE user_id = ?
+                ORDER BY order_id DESC
+            """, (self.current_username,))
+            orders = cursor.fetchall()
+            conn.close()
+
+            self.orders_table.setRowCount(len(orders))
+            for i, (order_id, order_date, status) in enumerate(orders):
+                date_widget = QWidget()
+                date_layout = QVBoxLayout(date_widget)
+                date_layout.setAlignment(Qt.AlignmentFlag.AlignCenter)
+                date_layout.setSpacing(0)
+
+                lbl_title = QLabel(f"Order ID: #{order_id} | Date :")
+                lbl_title.setStyleSheet("font-size: 14px; color: #666; margin-bottom: 5px;")
+                lbl_title.setAlignment(Qt.AlignmentFlag.AlignCenter)
+                date_layout.addWidget(lbl_title)
+
+                parts = order_date.split(' ')
+                date_text = parts[0]
+                time_text = parts[1] if len(parts) > 1 else ""
+
+                lbl_date = QLabel(date_text)
+                lbl_date.setStyleSheet("font-size: 22px; font-weight: bold; color: #000;")
+                lbl_date.setAlignment(Qt.AlignmentFlag.AlignCenter)
+                date_layout.addWidget(lbl_date)
+
+                if time_text:
+                    lbl_time = QLabel(time_text)
+                    lbl_time.setStyleSheet("font-size: 18px; font-weight: bold; color: #555;")
+                    lbl_time.setAlignment(Qt.AlignmentFlag.AlignCenter)
+                    date_layout.addWidget(lbl_time)
+
+                self.orders_table.setCellWidget(i, 0, date_widget)
+
+                status_item = QTableWidgetItem(status)
+                status_item.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
+                status_item.setFont(QFont("Arial", 16))
+                status_item.setData(Qt.ItemDataRole.UserRole, order_id)
+                status_item.setFlags(Qt.ItemFlag.ItemIsEnabled | Qt.ItemFlag.ItemIsSelectable)
+                self.orders_table.setItem(i, 1, status_item)
+
+                self.orders_table.setRowHeight(i, 130)
+
+        except Exception as e:
+            print(f"Error loading orders: {e}")
+
+    def on_order_clicked(self, row, col):
+        status_item = self.orders_table.item(row, 1)
+        if status_item:
+            order_id = status_item.data(Qt.ItemDataRole.UserRole)
+            self.show_order_details_page(order_id)
+
+    # --- ORDER DETAILS PAGE ---
+    def create_order_details_page(self):
+        details_frame = QFrame()
+        main_layout = QVBoxLayout(details_frame)
+        main_layout.setContentsMargins(250, 10, 20, 40)
+        main_layout.setSpacing(10)
+
+        self.order_details_header = QLabel("Order Details #...")
+        self.order_details_header.setStyleSheet("font-size: 24px; font-weight: bold; margin-bottom: 10px;")
+        main_layout.addWidget(self.order_details_header)
+
+        self.order_items_table = QTableWidget()
+        self.order_items_table.setObjectName("cartTable")
+        self.order_items_table.setColumnCount(4)
+        self.order_items_table.setHorizontalHeaderLabels(["ITEM", "UNIT PRICE", "QUANTITY", "AMOUNT"])
+
+        header = self.order_items_table.horizontalHeader()
+        header.setSectionResizeMode(0, QHeaderView.ResizeMode.Stretch)
+        header.setSectionResizeMode(1, QHeaderView.ResizeMode.ResizeToContents)
+        header.setSectionResizeMode(2, QHeaderView.ResizeMode.Fixed)
+        header.setSectionResizeMode(3, QHeaderView.ResizeMode.ResizeToContents)
+        self.order_items_table.setColumnWidth(2, 100)
+
+        self.order_items_table.verticalHeader().setVisible(False)
+        self.order_items_table.setSelectionMode(QAbstractItemView.SelectionMode.NoSelection)
+        self.order_items_table.setFocusPolicy(Qt.FocusPolicy.NoFocus)
+
+        main_layout.addWidget(self.order_items_table, 1)
+
+        footer_widget = QWidget()
+        footer_layout = QVBoxLayout(footer_widget)
+        footer_layout.setAlignment(Qt.AlignmentFlag.AlignRight)
+        footer_layout.setSpacing(10)
+
+        def create_summary_row(text, is_total=False):
+            row_widget = QWidget()
+            row_layout = QHBoxLayout(row_widget)
+            row_layout.setContentsMargins(0, 0, 0, 0)
+            row_layout.setAlignment(Qt.AlignmentFlag.AlignRight)
+
+            label_title = QLabel(text)
+            label_title.setObjectName("cartSummaryLabel")
+            label_title.setAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
+
+            label_value = QLabel("0.00 THB")
+            if is_total:
+                label_value.setObjectName("cartTotalValue")
+                label_value.setMinimumWidth(200)
+            else:
+                label_value.setObjectName("cartSummaryValue")
+                label_value.setFixedWidth(150)
+            label_value.setAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
+
+            row_layout.addWidget(label_title)
+            row_layout.addWidget(label_value)
+            return row_widget, label_value
+
+        row_sub, self.ord_subtotal_label = create_summary_row("Subtotal :")
+        row_ship, self.ord_shipping_label = create_summary_row("Shipping :")
+        row_vat, self.ord_vat_label = create_summary_row("VAT 7% :")
+        row_tot, self.ord_total_label = create_summary_row("Total :", is_total=True)
+
+        footer_layout.addWidget(row_sub)
+        footer_layout.addWidget(row_ship)
+        footer_layout.addWidget(row_vat)
+
+        line = QFrame()
+        line.setFrameShape(QFrame.Shape.HLine)
+        line.setFrameShadow(QFrame.Shadow.Plain)
+        line.setFixedWidth(300)
+        line.setStyleSheet("background-color: #000000; max-height: 1px; margin: 10px 0;")
+        footer_layout.addWidget(line)
+        footer_layout.addWidget(line, alignment=Qt.AlignmentFlag.AlignRight)
+
+        footer_layout.addWidget(row_tot)
+
+        buttons_container = QHBoxLayout()
+        self.ord_back_button = QPushButton("Back")
+        self.ord_back_button.setFixedSize(150, 50)
+        self.ord_back_button.clicked.connect(self.show_orders_page)
+
+        self.ord_download_button = QPushButton("Download Receipt")
+        self.ord_download_button.setFixedSize(200, 50)
+        # [MODIFIED] เชื่อม Signal สำหรับดาวน์โหลดใบเสร็จ
+        self.ord_download_button.clicked.connect(self.handle_download_receipt)
+
+        buttons_container.addWidget(self.ord_back_button)
+        buttons_container.addStretch()
+        buttons_container.addWidget(self.ord_download_button)
+
+        footer_layout.addSpacing(20)
+        footer_layout.addLayout(buttons_container)
+
+        main_layout.addWidget(footer_widget)
+
+        return details_frame
+
+    def show_order_details_page(self, order_id):
+        self.load_order_details(order_id)
+        self.sidebar_stack.setCurrentIndex(6)
+        self.main_content_stack.setCurrentIndex(6)
+
+    def load_order_details(self, order_id):
+        # [MODIFIED] บันทึก ID ที่กำลังดูล่าสุด
+        self.current_viewing_order_id = order_id
+        self.order_details_header.setText(f"Order Details #{order_id}")
+        self.order_items_table.setRowCount(0)
+
+        try:
+            conn = sqlite3.connect(DB_PATH)
+            cursor = conn.cursor()
+
+            cursor.execute("""
+                SELECT subtotal, shipping_fee, vat, total
+                FROM orders WHERE order_id = ?
+            """, (order_id,))
+            order_summary = cursor.fetchone()
+            if order_summary:
+                sub, ship, vat, tot = order_summary
+                self.ord_subtotal_label.setText(f"{sub:,.2f} THB")
+                self.ord_shipping_label.setText(f"{ship:,.2f} THB")
+                self.ord_vat_label.setText(f"{vat:,.2f} THB")
+                self.ord_total_label.setText(f"{tot:,.2f} THB")
+
+            cursor.execute("""
+                SELECT p.name, p.cover_img, oi.unit_price, oi.quantity
+                FROM order_items oi
+                JOIN product p ON oi.product_id = p.id
+                WHERE oi.order_id = ?
+            """, (order_id,))
+            items = cursor.fetchall()
+            conn.close()
+
+            self.order_items_table.setRowCount(len(items))
+            for i, (p_name, p_img, unit_price, quantity) in enumerate(items):
+                item_widget = QWidget()
+                item_layout = QHBoxLayout(item_widget)
+                item_layout.setContentsMargins(5, 5, 5, 5)
+                img_label = QLabel()
+                img_label.setFixedSize(60, 90)
+                img_label.setScaledContents(True)
+                if p_img and os.path.exists(p_img):
+                    img_label.setPixmap(QPixmap(p_img))
+                else:
+                    img_label.setPixmap(QPixmap("src/img/icon/profile.png"))
+                name_label = QLabel(p_name)
+                name_label.setWordWrap(True)
+                name_label.setObjectName("cartItemName")
+                item_layout.addWidget(img_label)
+                item_layout.addWidget(name_label)
+                self.order_items_table.setCellWidget(i, 0, item_widget)
+
+                price_item = QTableWidgetItem(f"{unit_price:,.2f} THB")
+                price_item.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
+                price_item.setFlags(Qt.ItemFlag.ItemIsEnabled | Qt.ItemFlag.ItemIsSelectable)
+                self.order_items_table.setItem(i, 1, price_item)
+
+                qty_item = QTableWidgetItem(str(quantity))
+                qty_item.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
+                qty_item.setFlags(Qt.ItemFlag.ItemIsEnabled | Qt.ItemFlag.ItemIsSelectable)
+                self.order_items_table.setItem(i, 2, qty_item)
+
+                amount = unit_price * quantity
+                amount_item = QTableWidgetItem(f"{amount:,.2f} THB")
+                amount_item.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
+                amount_item.setFlags(Qt.ItemFlag.ItemIsEnabled | Qt.ItemFlag.ItemIsSelectable)
+                self.order_items_table.setItem(i, 3, amount_item)
+
+                self.order_items_table.setRowHeight(i, 100)
+
+        except Exception as e:
+            print(f"Error loading order details: {e}")
+            QMessageBox.warning(self, "Error", "Could not load order details.")
+
+    # --- PROFILE PAGE ---
     def create_profile_page(self):
         profile_frame = QFrame()
-        profile_frame.setObjectName("ProfilePage") 
-        
+        profile_frame.setObjectName("ProfilePage")
+
         main_profile_layout = QVBoxLayout(profile_frame)
         main_profile_layout.setContentsMargins(300, 50, 50, 50)
         main_profile_layout.setSpacing(30)
@@ -860,122 +1698,117 @@ class MainUserWindow(QMainWindow):
         left_pic_layout = QVBoxLayout()
         left_pic_layout.setSpacing(10)
         left_pic_layout.setAlignment(Qt.AlignmentFlag.AlignTop)
-        left_pic_layout.setContentsMargins(0,0,0,0)
+        left_pic_layout.setContentsMargins(0, 0, 0, 0)
 
         self.profile_pic_label = QLabel()
         self.profile_pic_label.setObjectName("profilePicLabel")
-        self.profile_pic_label.setFixedSize(250, 250) 
-        
+        self.profile_pic_label.setFixedSize(250, 250)
+
         self.upload_button = QPushButton("Upload Profile image")
         try:
-            upload_icon = QIcon(QPixmap("src/img/icon/upload.png")) 
+            upload_icon = QIcon(QPixmap("src/img/icon/upload.png"))
             self.upload_button.setIcon(upload_icon)
             self.upload_button.setIconSize(QSize(40, 40))
         except:
-                print("คำเตือน: ไม่พบไอคอนอัปโหลด 'src/img/icon/upload.png'")
-            
-        self.upload_button.setObjectName("uploadButton") 
+            print("คำเตือน: ไม่พบไอคอนอัปโหลด 'src/img/icon/upload.png'")
+
+        self.upload_button.setObjectName("uploadButton")
         self.upload_button.setFixedHeight(40)
         self.upload_button.clicked.connect(self.select_profile_image)
         self.upload_button.setVisible(False)
-        
+
         left_pic_layout.addWidget(self.profile_pic_label)
         left_pic_layout.addWidget(self.upload_button)
-        
+
         left_container.setLayout(left_pic_layout)
         top_layout.addWidget(left_container, 0, alignment=Qt.AlignmentFlag.AlignTop)
-        
+
         info_frame = QFrame()
         info_frame.setObjectName("profileInfoFrame")
-        info_layout = QFormLayout(info_frame) 
+        info_layout = QFormLayout(info_frame)
         info_layout.setSpacing(15)
-        info_layout.setLabelAlignment(Qt.AlignmentFlag.AlignLeft) 
+        info_layout.setLabelAlignment(Qt.AlignmentFlag.AlignLeft)
 
         self.profile_username_field = QLineEdit()
         self.profile_fname_field = QLineEdit()
         self.profile_lname_field = QLineEdit()
-        self.profile_gender_field = QComboBox() 
+        self.profile_gender_field = QComboBox()
         self.profile_gender_field.addItems(["ชาย", "หญิง", "อื่น ๆ"])
-        self.profile_gender_field.setObjectName("profileDataField") 
-        
+        self.profile_gender_field.setObjectName("profileDataField")
+
         self.profile_email_field = QLineEdit()
         self.profile_phone_field = QLineEdit()
-        self.profile_address_field = QTextEdit() 
-        
+        self.profile_address_field = QTextEdit()
+
         self.editable_profile_fields = [
             self.profile_fname_field, self.profile_lname_field,
             self.profile_gender_field,
             self.profile_email_field,
             self.profile_phone_field, self.profile_address_field
         ]
-        
+
         self.profile_username_field.setReadOnly(True)
         self.profile_username_field.setObjectName("profileDataField")
-        
+
         for field in self.editable_profile_fields:
             if isinstance(field, (QLineEdit, QTextEdit)):
                 field.setReadOnly(True)
             elif isinstance(field, QComboBox):
                 field.setEnabled(False)
-                
-            field.setObjectName("profileDataField") 
 
-        self.profile_address_field.setFixedHeight(100) 
+            field.setObjectName("profileDataField")
+
+        self.profile_address_field.setFixedHeight(100)
 
         info_layout.addRow(QLabel("Username :"), self.profile_username_field)
-        info_layout.addRow(QLabel("First Name :"), self.profile_fname_field) 
+        info_layout.addRow(QLabel("First Name :"), self.profile_fname_field)
         info_layout.addRow(QLabel("Last Name :"), self.profile_lname_field)
         info_layout.addRow(QLabel("Gender :"), self.profile_gender_field)
         info_layout.addRow(QLabel("Email :"), self.profile_email_field)
-        info_layout.addRow(QLabel("Phone :"), self.profile_phone_field) 
+        info_layout.addRow(QLabel("Phone :"), self.profile_phone_field)
         info_layout.addRow(QLabel("Address :"), self.profile_address_field)
 
-        top_layout.addWidget(info_frame, 1) 
+        top_layout.addWidget(info_frame, 1)
         main_profile_layout.addLayout(top_layout)
 
         self.bottom_button_layout = QHBoxLayout()
         self.bottom_button_layout.setSpacing(10)
-        
-        edit_icon = QIcon("src/img/icon/edit.png") 
+
+        edit_icon = QIcon("src/img/icon/edit.png")
         self.edit_button = QPushButton(" Edit profile")
         self.edit_button.setIcon(edit_icon)
         self.edit_button.setIconSize(QSize(50, 50))
-        self.edit_button.setObjectName("editProfileButton") 
+        self.edit_button.setObjectName("editProfileButton")
         self.edit_button.setFixedSize(190, 60)
-        
-        self.edit_button.clicked.connect(self.toggle_edit_mode) 
-        
+
+        self.edit_button.clicked.connect(self.toggle_edit_mode)
+
         self.bottom_button_layout.addWidget(self.edit_button, 0)
-        
-        confirm_icon = QIcon("src/img/icon/confirm.png") 
+
+        confirm_icon = QIcon("src/img/icon/confirm.png")
         self.confirm_button = QPushButton(" Confirm")
         self.confirm_button.setIcon(confirm_icon)
         self.confirm_button.setIconSize(QSize(50, 50))
-        self.confirm_button.setObjectName("confirmProfileButton") 
+        self.confirm_button.setObjectName("confirmProfileButton")
         self.confirm_button.setFixedSize(190, 60)
         self.confirm_button.clicked.connect(self.save_profile_changes)
         self.confirm_button.setVisible(False)
-        
+
         self.bottom_button_layout.addWidget(self.confirm_button, 0)
-        
+
         self.bottom_button_layout.addStretch(1)
-        
+
         main_profile_layout.addLayout(self.bottom_button_layout)
         main_profile_layout.addStretch()
 
         return profile_frame
 
     def create_scaled_pixmap(self, image_path, size):
-        """
-        สร้าง QPixmap สี่เหลี่ยมที่สเกลแล้วจาก image_path ที่กำหนด
-        """
         try:
             source_pixmap = QPixmap(image_path)
             if source_pixmap.isNull():
-                print(f"คำเตือน: ไม่พบไฟล์รูปภาพที่ '{image_path}', ใช้รูปโปรไฟล์เริ่มต้น")
                 source_pixmap = QPixmap("src/img/icon/profile.png")
                 if source_pixmap.isNull():
-                    print("คำเตือน: ไม่พบรูปโปรไฟล์เริ่มต้น 'src/img/icon/profile.png'")
                     source_pixmap = QPixmap(size, size)
                     source_pixmap.fill(Qt.GlobalColor.gray)
 
@@ -985,8 +1818,8 @@ class MainUserWindow(QMainWindow):
             source_pixmap.fill(Qt.GlobalColor.gray)
 
         scaled_pixmap = source_pixmap.scaled(
-            size, size, 
-            Qt.AspectRatioMode.IgnoreAspectRatio, 
+            size, size,
+            Qt.AspectRatioMode.IgnoreAspectRatio,
             Qt.TransformationMode.SmoothTransformation
         )
         return scaled_pixmap
@@ -994,62 +1827,61 @@ class MainUserWindow(QMainWindow):
     def load_user_profile(self):
         try:
             target_size = 250
-            
+
             if not os.path.exists(DB_PATH):
                 print(f"ข้อผิดพลาด: ไม่พบไฟล์ DB ขณะโหลดโปรไฟล์: {DB_PATH}")
                 self.profile_username_field.setText(self.current_username)
                 self.profile_fname_field.setText("N/A (DB not found)")
-                
+
                 default_pixmap = self.create_scaled_pixmap("src/img/icon/profile.png", target_size)
                 self.profile_pic_label.setPixmap(default_pixmap)
                 return
 
             conn = sqlite3.connect(DB_PATH)
             cursor = conn.cursor()
-            
+
             cursor.execute("""
-                SELECT first_name, last_name, gender, email, phone, address, profile_img 
-                FROM users 
+                SELECT first_name, last_name, gender, email, phone, address, profile_img
+                FROM users
                 WHERE username = ?
             """, (self.current_username,))
-            
+
             user_data = cursor.fetchone()
             conn.close()
 
             if user_data:
                 fname, lname, gender, email, phone, address, img_path = user_data
-                
+
                 self.profile_username_field.setText(self.current_username)
                 self.profile_fname_field.setText(fname or "")
                 self.profile_lname_field.setText(lname or "")
-                
+
                 gender_value = gender or ""
                 index = self.profile_gender_field.findText(gender_value, Qt.MatchFlag.MatchFixedString)
                 if index >= 0:
                     self.profile_gender_field.setCurrentIndex(index)
                 else:
                     self.profile_gender_field.setCurrentIndex(0)
-                    if gender_value not in ["", "N/A"]:
-                            print(f"คำเตือน: เพศ '{gender_value}' จาก DB ไม่ตรงกับตัวเลือก, ตั้งเป็นค่าเริ่มต้น")
-                
+
                 self.profile_email_field.setText(email or "")
-                self.profile_phone_field.setText(phone or "") 
+                self.profile_phone_field.setText(phone or "")
                 self.profile_address_field.setText(address or "")
-                
+
                 self.current_profile_img_path = img_path
                 self.new_profile_img_path = None
 
-                image_path_to_load = img_path if (img_path and os.path.exists(img_path)) else "src/img/icon/profile.png"
+                image_path_to_load = img_path if (
+                        img_path and os.path.exists(img_path)) else "src/img/icon/profile.png"
                 scaled_pixmap = self.create_scaled_pixmap(image_path_to_load, target_size)
                 self.profile_pic_label.setPixmap(scaled_pixmap)
-                
+
             else:
                 print(f"ไม่พบผู้ใช้: {self.current_username}")
                 self.profile_username_field.setText(self.current_username)
                 self.profile_fname_field.setText("N/A")
                 self.profile_lname_field.setText("N/A")
                 self.profile_gender_field.setCurrentIndex(0)
-                
+
                 default_pixmap = self.create_scaled_pixmap("src/img/icon/profile.png", target_size)
                 self.profile_pic_label.setPixmap(default_pixmap)
 
@@ -1059,7 +1891,6 @@ class MainUserWindow(QMainWindow):
 
     def set_profile_fields_read_only(self, read_only):
         for field in self.editable_profile_fields:
-            
             is_read_only_widget = isinstance(field, (QLineEdit, QTextEdit))
             is_combo_box = isinstance(field, QComboBox)
 
@@ -1068,10 +1899,8 @@ class MainUserWindow(QMainWindow):
             elif is_combo_box:
                 field.setEnabled(not read_only)
 
-            # ใช้ Property เพื่อช่วย QSS
-            field.setProperty("readOnly", read_only) 
+            field.setProperty("readOnly", read_only)
             self.style().polish(field)
-
 
     def enable_edit_mode(self):
         self.set_profile_fields_read_only(False)
@@ -1083,123 +1912,240 @@ class MainUserWindow(QMainWindow):
         self.upload_button.setVisible(False)
         self.confirm_button.setVisible(False)
         self.edit_button.setVisible(True)
-        # โหลดข้อมูลซ้ำ (เพื่อยกเลิกการแก้ไขที่ยังไม่บันทึก)
         self.load_user_profile()
 
     def toggle_edit_mode(self):
         if self.is_in_edit_mode:
-            print("ยกเลิกการแก้ไขโปรไฟล์")
             self.disable_edit_mode()
             self.is_in_edit_mode = False
         else:
-            print("เปิดใช้งานการแก้ไขโปรไฟล์")
             self.enable_edit_mode()
             self.is_in_edit_mode = True
 
     def select_profile_image(self):
         file_path, _ = QFileDialog.getOpenFileName(
-            self, 
-            "Select Profile Image", 
+            self,
+            "Select Profile Image",
             "",
             "Images (*.png *.jpg *.jpeg *.bmp)"
         )
-        
+
         if file_path:
             self.new_profile_img_path = os.path.normpath(file_path)
-            
             target_size = 250
             scaled_pixmap = self.create_scaled_pixmap(self.new_profile_img_path, target_size)
             self.profile_pic_label.setPixmap(scaled_pixmap)
-            
-            print(f"เลือกรูปโปรไฟล์ใหม่: {self.new_profile_img_path}")
 
     def save_profile_changes(self):
         try:
             fname = self.profile_fname_field.text()
             lname = self.profile_lname_field.text()
-            gender = self.profile_gender_field.currentText() 
+            gender = self.profile_gender_field.currentText()
             email = self.profile_email_field.text()
             phone = self.profile_phone_field.text()
             address = self.profile_address_field.toPlainText()
-            
+
             image_to_save = self.new_profile_img_path if self.new_profile_img_path else self.current_profile_img_path
 
             conn = sqlite3.connect(DB_PATH)
             cursor = conn.cursor()
-            
+
             cursor.execute("""
-                UPDATE users 
-                SET 
-                    first_name = ?, 
-                    last_name = ?, 
-                    gender = ?, 
-                    email = ?, 
-                    phone = ?, 
-                    address = ?, 
-                    profile_img = ?
-                WHERE 
-                    username = ?
+                UPDATE users
+                SET first_name = ?, last_name = ?, gender = ?,
+                    email = ?, phone = ?, address = ?, profile_img = ?
+                WHERE username = ?
             """, (fname, lname, gender, email, phone, address, image_to_save, self.current_username))
-            
+
             conn.commit()
             conn.close()
-            
-            print(f"อัปเดตโปรไฟล์สำหรับ {self.current_username} สำเร็จ")
-            QMessageBox.information(self, "Success", "Profile updated successfully!")
 
+            QMessageBox.information(self, "Success", "Profile updated successfully!")
             self.disable_edit_mode()
-            
-            self.is_in_edit_mode = False 
+            self.is_in_edit_mode = False
 
         except Exception as e:
             print(f"เกิดข้อผิดพลาดในการบันทึกโปรไฟล์: {e}")
             QMessageBox.warning(self, "Error", f"ไม่สามารถบันทึกการเปลี่ยนแปลงโปรไฟล์ได้: {e}")
 
-
     def show_profile_page(self):
-        # ปิด Edit Mode (ถ้าเผลอเปิดไว้) และโหลดข้อมูลใหม่
         self.disable_edit_mode()
         self.load_user_profile()
-        
-        self.is_in_edit_mode = False 
-        
+        self.is_in_edit_mode = False
         self.sidebar_stack.setCurrentIndex(1)
         self.main_content_stack.setCurrentIndex(1)
 
     def show_browse_page(self):
         self.sidebar_stack.setCurrentIndex(0)
         self.main_content_stack.setCurrentIndex(0)
-        # (เพิ่ม) เมื่อกลับมาหน้า browse, ให้รีเซ็ตเป็น "ALL"
-        # และล้างช่อง search
-        # หมายเหตุ: หากคุณต้องการให้จำค่า filter/search เดิม ให้ลบบรรทัดล่างนี้
         self.filter_products_by_category("ALL")
-
 
     def handle_logout(self):
         reply = QMessageBox.question(self, 'Logout', 'Are you sure you want to logout?',
                                      QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
                                      QMessageBox.StandardButton.No)
-
         if reply == QMessageBox.StandardButton.Yes:
             self.logout_requested.emit()
             self.close()
 
+    # --- [NEW] RECEIPT GENERATION METHODS ---
+    def init_receipt_font(self):
+        """ลงทะเบียนฟอนต์สำหรับ ReportLab"""
+        self.main_pdf_font = 'Helvetica'
+        if os.path.exists(FONT_PATH):
+            try:
+                pdfmetrics.registerFont(TTFont('ThaiFont', FONT_PATH))
+                self.main_pdf_font = 'ThaiFont'
+            except Exception as e:
+                print(f"Warning: Could not register Thai font: {e}")
+        else:
+            print(f"Warning: Font not found at {FONT_PATH}")
+
+    def handle_download_receipt(self):
+        if self.current_viewing_order_id is None:
+            QMessageBox.warning(self, "Error", "No order selected.")
+            return
+        self.generate_receipt_pdf(self.current_viewing_order_id)
+
+    def generate_receipt_pdf(self, order_id):
+        try:
+            conn = sqlite3.connect(DB_PATH)
+            conn.row_factory = sqlite3.Row
+            cursor = conn.cursor()
+
+            cursor.execute("SELECT * FROM orders WHERE order_id = ?", (order_id,))
+            order_info = cursor.fetchone()
+            if not order_info:
+                QMessageBox.warning(self, "Error", f"Order {order_id} not found.")
+                conn.close()
+                return
+
+            cursor.execute("""
+                SELECT oi.product_id, p.name, oi.unit_price, oi.quantity
+                FROM order_items oi
+                LEFT JOIN product p ON oi.product_id = p.id
+                WHERE oi.order_id = ?
+            """, (order_id,))
+            items = cursor.fetchall()
+            conn.close()
+        except Exception as e:
+            QMessageBox.critical(self, "Database Error", f"Could not fetch order data: {e}")
+            return
+
+        try:
+            if not os.path.exists(PDF_OUTPUT_DIR):
+                os.makedirs(PDF_OUTPUT_DIR)
+
+            pdf_filename = os.path.join(PDF_OUTPUT_DIR, f"Receipt_{order_info['user_id']}_{order_id}.pdf")
+            pdf_filename = os.path.abspath(pdf_filename)
+
+            c = canvas.Canvas(pdf_filename, pagesize=A4)
+            width, height = A4
+
+            # --- HEADER ---
+            LOGO_X, LOGO_Y = 15 * mm, height - 60 * mm
+            LOGO_W, LOGO_H = 50 * mm, 40 * mm
+            if os.path.exists(LOGO_PATH):
+                try:
+                    c.drawImage(LOGO_PATH, LOGO_X, LOGO_Y, width=LOGO_W, height=LOGO_H, preserveAspectRatio=True,
+                                mask='auto')
+                except:
+                    pass
+
+            c.setFont(self.main_pdf_font, 14)
+            text_y = height - 55 * mm
+            for line in ["ที่อยู่ร้านค้า :", "หอพักนักศึกษาชายที่ 10 มหาวิทยาลัยขอนแก่น",
+                         "ตำบล ศิลา อำเภอเมืองขอนแก่น จังหวัด ขอนแก่น 40000",
+                         "เลขประจำตัวผู้เสียภาษี 3101103733"]:
+                c.drawString(20 * mm, text_y, line)
+                text_y -= 6 * mm
+
+            c.setFont("Helvetica-Bold", 20)
+            c.drawCentredString(width / 2.0, height - 20 * mm, f"ORDER ID # {order_info['order_id']}")
+
+            c.setFont("Helvetica", 7)
+            c.drawString(135 * mm, height - 55 * mm, "CUSTOMER :")
+            c.drawString(135 * mm, height - 65 * mm, "ORDER DATE :")
+
+            c.setFont(self.main_pdf_font, 14)
+            c.drawString(155 * mm, height - 55 * mm, str(order_info['user_id']))
+            c.drawString(155 * mm, height - 65 * mm, str(order_info['order_date']))
+
+            # --- TABLE ---
+            table_data = [['ID', 'ITEM', 'UNIT PRICE', 'QUANTITY', 'AMOUNT']]
+            for idx, item in enumerate(items, 1):
+                u_price = item['unit_price']
+                qty = item['quantity']
+                amount = u_price * qty
+                table_data.append([
+                    str(idx),
+                    item['name'] if item['name'] else "Unknown Item",
+                    f"{u_price:,.2f} THB",
+                    str(qty),
+                    f"{amount:,.2f} THB"
+                ])
+
+            table = Table(table_data, colWidths=[10 * mm, 70 * mm, 35 * mm, 20 * mm, 35 * mm])
+            table.setStyle(TableStyle([
+                ('FONT', (0, 0), (-1, -1), self.main_pdf_font, 12),
+                ('ALIGN', (1, 1), (-1, 0), 'LEFT'),                 # หัวตาราง: ชิดซ้าย
+                ('ALIGN', (5, 1), (-1, -1), 'RIGHT'),
+                ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+                ('LINEABOVE', (0, 0), (-1, 0), 1, colors.black),
+                ('LINEBELOW', (0, 0), (-1, 0), 1, colors.black),
+                ('WORDWRAP', (1, 1), (1, -1), True),
+            ]))
+
+            available_width = width - 40 * mm
+            _, table_height = table.wrap(available_width, height)
+            table_top_y = height - 80 * mm
+            table_y = table_top_y - table_height
+            table.drawOn(c, 20 * mm, table_y)
+
+            # --- FOOTER ---
+            y_footer = table_y - 20 * mm
+            c.setLineWidth(0.5)
+            c.line(20 * mm, y_footer + 5 * mm, width - 20 * mm, y_footer + 5 * mm)
+
+            c.setFont(self.main_pdf_font, 14)
+            right_x = width - 25 * mm
+
+            c.drawRightString(right_x - 40 * mm, y_footer - 5 * mm, "Subtotal :")
+            c.drawRightString(right_x, y_footer - 5 * mm, f"{order_info['subtotal']:,.2f} THB")
+
+            c.drawRightString(right_x - 40 * mm, y_footer - 12 * mm, "Shipping :")
+            c.drawRightString(right_x, y_footer - 12 * mm, f"{order_info['shipping_fee']:,.2f} THB")
+
+            c.drawRightString(right_x - 40 * mm, y_footer - 19 * mm, "VAT 7% :")
+            c.drawRightString(right_x, y_footer - 19 * mm, f"{order_info['vat']:,.2f} THB")
+
+            c.line(width - 80 * mm, y_footer - 24 * mm, width - 20 * mm, y_footer - 24 * mm)
+            c.setFont("Helvetica", 16)
+            c.drawRightString(right_x - 40 * mm, y_footer - 32 * mm, "Total :")
+            c.drawRightString(right_x, y_footer - 32 * mm, f"{order_info['total']:,.2f} THB")
+
+            c.setFont("Helvetica-Bold", 24)
+            c.drawCentredString(width / 2.0, 30 * mm, "Thank bro, you are my hero!")
+
+            c.save()
+
+            # สั่งเปิดไฟล์ทันที
+            if os.name == 'nt':  # สำหรับ Windows
+                os.startfile(pdf_filename)
+            else:  # สำหรับ macOS หรือ Linux
+                import subprocess
+                opener = 'open' if sys.platform == 'darwin' else 'xdg-open'
+                subprocess.call([opener, pdf_filename])
+
+        except Exception as e:
+            QMessageBox.critical(self, "PDF Error", f"Could not create receipt PDF: {e}")
+            import traceback
+            traceback.print_exc()
+            
+            
+
 if __name__ == '__main__':
     app = QApplication(sys.argv)
-    # (สำคัญ) ตรวจสอบให้แน่ใจว่าตาราง 'product' ใน DB ของคุณ
-    # มีคอลัมน์เหล่านี้ทั้งหมดเพื่อให้โค้ดทำงานได้:
-    # - id (สำหรับระบุสินค้า)
-    # - name (สำหรับ A-Z และ Search)
-    # - category (สำหรับ MARVEL, DC, ...)
-    # - created_at (สำหรับ Newest, Oldest)
-    # - cover_img (สำหรับแสดงปก)
-    # - volume_issue (สำหรับแสดงใน grid)
-    # - description (สำหรับหน้ารายละเอียด)
-    # - writer (สำหรับหน้ารายละเอียด)
-    # - rated (สำหรับหน้ารายละเอียด)
-    # - stock (สำหรับหน้ารายละเอียด) <--- (สำคัญมากสำหรับหน้ารายละเอียด)
-    # - price (สำหรับหน้ารายละเอียด)
-    #
-    window = MainUserWindow(username="test") 
+    window = MainUserWindow(username="test")
     window.show()
     sys.exit(app.exec())

@@ -18,28 +18,13 @@ try:
     from forgot_password import ForgotPasswordPage 
 except ImportError:
     print("Warning: 'forgot_password.py' not found. Using mock class.")
-    # (แก้ไข) เปลี่ยนชื่อ mock class
-    class ForgotPasswordPage(QFrame):
-        def __init__(self, parent=None):
-            super().__init__(parent)
-            # (แก้ไข) เปลี่ยน ObjectName
-            self.setObjectName("forgotPage") 
-            QLabel("Mock Forgot Password Page", self).move(100, 100)
-            self.back_btn = QPushButton("Mock Back", self) 
-            self.back_btn.move(100, 150)
             
 try:
     from signup import SignupPage 
     print("Successfully imported SignupPage from signup.py")
 except ImportError:
     print("Error: 'signup.py' not found or SignupPage class not found.")
-    class SignupPage(QFrame):
-        def __init__(self, parent=None):
-            super().__init__(parent)
-            self.setObjectName("signupPage")
-            QLabel("Mock Signup Page", self).move(100, 100)
-            self.back_btn = QPushButton("Mock Back", self) 
-            self.back_btn.move(100, 150)
+
 
 # === (เพิ่ม) Import Main Windows (User, Mod, Admin) ===
 # (ย้าย import มาไว้ตรงนี้ เพื่อให้หาไฟล์เจอ)
@@ -48,29 +33,12 @@ try:
     from mainuser import MainUserWindow
 except ImportError:
     print("Warning: mainuser.py not found. Using Mock.")
-    class MainUserWindow(QMainWindow):
-        def __init__(self, username, parent=None):
-            super().__init__(parent)
-            QLabel(f"Mock User Window\nWelcome {username}", self).move(50,50)
-
-try:
-    from mainmod import MainModWindow
-except ImportError:
-    print("Warning: mainmod.py not found. Using Mock.")
-    class MainModWindow(QMainWindow):
-         def __init__(self, username, parent=None):
-            super().__init__(parent)
-            QLabel(f"Mock Mod Window\nWelcome {username}", self).move(50,50)
 
 try:
     from mainadmin import MainAdminWindow
 except ImportError:
     print("Warning: mainadmin.py not found. Using Mock.")
-    class MainAdminWindow(QMainWindow):
-         def __init__(self, username, parent=None):
-            super().__init__(parent)
-            QLabel(f"Mock Admin Window\nWelcome {username}", self).move(50,50)
-
+    
 
 # === หน้า Login (แก้ไข) ===
 class LoginPage(QFrame):
@@ -294,9 +262,6 @@ class MainWindow(QMainWindow):
             if role == 'user':
                 # (import ถูกย้ายไปข้างบนแล้ว)
                 self.main_app_window = MainUserWindow(username=username)
-            elif role == 'moderator':
-                # (import ถูกย้ายไปข้างบนแล้ว)
-                self.main_app_window = MainModWindow(username=username)
             elif role == 'admin':
                 # (import ถูกย้ายไปข้างบนแล้ว)
                 self.main_app_window = MainAdminWindow(username=username)

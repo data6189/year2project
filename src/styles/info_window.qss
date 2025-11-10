@@ -1,0 +1,50 @@
+QMainWindow {
+    border-image: url("src/img/user/aboutbg.png") 0 0 0 0 stretch stretch;
+}
+
+/* === Feedback Title === */
+QLabel#feedback_title {
+    color: #0056b3;
+    border:1px solid #007BFF;
+    padding: 8px;
+    border-radius: 5px;
+    /* font-family และ size ถูกกำหนดไว้ใน Python แล้ว แต่สามารถ override ที่นี่ได้ถ้าต้องการ */
+}
+
+/* === Feedback Input Box === */
+QTextEdit#feedback_input {
+    background-color: rgba(255, 255, 255, 240);
+    border: 3px solid #000000;
+    border-radius: 20px;
+    padding: 20px;
+    font-size: 18px;
+    color: #34495e;
+}
+
+/* === BACK Button === */
+QPushButton#btn_back {
+    background-color: #007BFF; /* สีน้ำเงินหลัก */
+    color: white;
+    font-size: 16px;
+    padding: 12px;
+    border-radius: 5px;
+    font-weight: 700px;
+    min-width: 150px;
+}
+QPushButton#btn_back:hover {
+    background-color: #0056b3;
+}
+
+/* === SEND Button === */
+QPushButton#btn_send {
+    background-color: #007BFF; /* สีน้ำเงินหลัก */
+    color: white;
+    font-size: 16px;
+    padding: 12px;
+    border-radius: 5px;
+    font-weight: 700px;
+    min-width: 150px;
+}
+QPushButton#btn_send:hover {
+    background-color: #0056b3;
+}
