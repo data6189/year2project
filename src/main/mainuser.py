@@ -627,7 +627,7 @@ class MainUserWindow(QMainWindow):
         self.detail_cover_label.setObjectName("detailCover")
         self.detail_cover_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.detail_cover_label.setFixedSize(250, 380)
-        main_detail_layout.addWidget(self.detail_cover_label, 0, Qt.AlignmentFlag.AlignRight)
+        main_detail_layout.addWidget(self.detail_cover_label, 0, Qt.AlignmentFlag.AlignTop)
 
         main_detail_layout.addStretch(1)
 
@@ -1597,6 +1597,13 @@ class MainUserWindow(QMainWindow):
         self.ord_back_button.setObjectName("ordBackButton") # เพิ่ม ObjectName เผื่อต้องการ style ในอนาคต
         self.ord_back_button.setFixedSize(150, 50)
         self.ord_back_button.clicked.connect(self.show_orders_page)
+        
+        # --- [เพิ่มส่วนนี้] ปุ่มสำหรับดูรูปสลิป ---
+        self.ord_view_slip_button = QPushButton("View Transfer Receipt")
+        self.ord_view_slip_button.setObjectName("ordDownloadButton") # ตั้งชื่อเผื่อไปแก้ CSS
+        self.ord_view_slip_button.setFixedSize(250, 50)
+        self.ord_view_slip_button.clicked.connect(self.handle_view_slip_image)
+        # ------------------------------------
 
         self.ord_download_button = QPushButton("Download Receipt")
         self.ord_download_button.setObjectName("ordDownloadButton") # เพิ่ม ObjectName
@@ -1605,8 +1612,10 @@ class MainUserWindow(QMainWindow):
 
         buttons_container.addWidget(self.ord_back_button)
         buttons_container.addStretch()
+        buttons_container.addWidget(self.ord_view_slip_button)
+        buttons_container.addSpacing(15) # เว้นระยะห่างระหว่างปุ่มเล็กน้อย
         buttons_container.addWidget(self.ord_download_button)
-
+        
         footer_layout.addSpacing(20)
         footer_layout.addLayout(buttons_container)
 
@@ -2016,7 +2025,7 @@ class MainUserWindow(QMainWindow):
         if self.current_viewing_order_id is None:
             QMessageBox.warning(self, "Error", "No order selected.")
             return
-        self.generate_receipt_pdf(self.current_viewing_order_id)
+        self.generate_receipt_pdf(self.current_viewing_order_id)    
 
     def generate_receipt_pdf(self, order_id):
         try:
@@ -2054,56 +2063,52 @@ class MainUserWindow(QMainWindow):
             width, height = A4
 
             # --- HEADER ---
-            # 1. หัวกระดาษ (ORDER ID) - อยู่บนสุด ตรงกลาง
-            c.setFont("Helvetica-Bold", 20)
-            c.drawCentredString(width / 2.0, height - 25 * mm, f"ORDER ID # {order_info['order_id']}")
+            # 1. หัวกระดาษ (ORDER ID)
+            c.setFont("Helvetica", 20)
+            c.drawCentredString(width / 2.0, height - 30 * mm, f"ORDER ID # {order_info['order_id']}")
 
-            # 2. โลโก้ (ซ้าย) และ ที่อยู่ร้านค้า (ขวา)
-            header_start_y = height - 45 * mm # จุดเริ่มของส่วนนี้
-
-            # --- โลโก้ (ย้ายมาซ้าย) ---
-            LOGO_X, LOGO_Y = 20 * mm, header_start_y - 20 * mm # กำหนดตำแหน่งมุมล่างซ้ายของรูป
-            LOGO_W, LOGO_H = 50 * mm, 40 * mm
+            # 2. ข้อมูลร้านค้า
+            # ปรับตำแหน่ง Logo เล็กน้อยไม่ให้ทับข้อความ (ถ้ามี)
+            LOGO_X, LOGO_Y = width - 125 * mm, height - 30 * mm # ย้าย Logo ไปขวาบนแทน เพื่อไม่ให้เบียดซ้าย
+            LOGO_W, LOGO_H = 40 * mm, 30 * mm
             if os.path.exists(LOGO_PATH):
                 try:
                     c.drawImage(LOGO_PATH, LOGO_X, LOGO_Y, width=LOGO_W, height=LOGO_H, preserveAspectRatio=True, mask='auto')
                 except:
                     pass
 
-            # --- ที่อยู่ร้านค้า (ย้ายไปขวา) ---
-            text_y = header_start_y
-            right_col_x = width - 20 * mm # จุดอ้างอิงสำหรับชิดขวา
-
             c.setFont(self.main_pdf_font, 14)
-            c.drawRightString(right_col_x, text_y, "ที่อยู่ร้านค้า :") # หัวข้อชิดขวา
+            text_y = height - 50 * mm # เริ่มต้นเขียนที่ตำแหน่งนี้
+            c.drawString(20 * mm, text_y, "Beyond Comics Inc.")
             text_y -= 7 * mm
-
-            c.setFont(self.main_pdf_font, 12)
+            # ลดขนาดฟอนต์ที่อยู่ลงเล็กน้อยเพื่อให้ดูสวยงามขึ้นเมื่ออยู่รวมกัน (หรือจะใช้ 14 เท่าเดิมก็ได้ครับ)
+            c.setFont(self.main_pdf_font, 12) 
             for line in ["หอพักนักศึกษาชายที่ 10 มหาวิทยาลัยขอนแก่น",
                          "ตำบล ศิลา อำเภอเมืองขอนแก่น จังหวัด ขอนแก่น 40000",
-                         "เลขประจำตัวผู้เสียภาษี 3101103733"]:
-                c.drawRightString(right_col_x, text_y, line) # เนื้อหาชิดขวา
+                         "เลขประจำตัวผู้เสียภาษี 3101103733",
+                         "โทร. 098-106-9613"]:
+                c.drawString(25 * mm, text_y, line) # ขยับเข้ามานิดนึง (Indentation)
                 text_y -= 6 * mm
 
             # --- เส้นคั่น ---
-            # ให้เส้นคั่นอยู่ใต้ Logo หรือ Text อันที่ยาวกว่า (เผื่อ Logo สูงกว่า Text)
-            line_y = min(text_y, LOGO_Y) - 5 * mm 
+            line_y = text_y - 2 * mm
             c.setLineWidth(0.5)
             c.line(20 * mm, line_y, width - 20 * mm, line_y)
 
-            # 3. ข้อมูลลูกค้า (อยู่ใต้เส้นคั่น ชิดซ้ายเหมือนเดิม)
+            # 3. ข้อมูลลูกค้า (ย้ายมาอยู่ใต้เส้นคั่น)
             text_y = line_y - 8 * mm
             c.setFont(self.main_pdf_font, 14)
             c.drawString(20 * mm, text_y, "ข้อมูลลูกค้า :")
             
             text_y -= 7 * mm
             c.setFont(self.main_pdf_font, 12)
+            # ใช้ f-string จัดข้อความให้ชิดกันสวยงาม
             c.drawString(25 * mm, text_y, f"Customer ID : {order_info['user_id']}")
             text_y -= 6 * mm
             c.drawString(25 * mm, text_y, f"Order Date : {order_info['order_date']}")
 
             # --- TABLE ---
-            # (ส่วนเตรียมข้อมูลตาราง ... เหมือนเดิม)
+            # ... (ส่วนการเตรียมข้อมูลตารางเหมือนเดิม) ...
             table_data = [['ID', 'ITEM', 'UNIT PRICE', 'QUANTITY', 'AMOUNT']]
             for idx, item in enumerate(items, 1):
                 u_price = item['unit_price']
@@ -2131,8 +2136,8 @@ class MainUserWindow(QMainWindow):
             available_width = width - 40 * mm
             _, table_height = table.wrap(available_width, height)
             
-            # ปรับตำแหน่งเริ่มตารางตาม text_y ล่าสุด
-            table_top_y = text_y - 15 * mm  
+            # *** จุดสำคัญ: ปรับตำแหน่งเริ่มตารางลงมา เพราะ Header ยาวขึ้น ***
+            table_top_y = text_y - 15 * mm  # ให้ห่างจากบรรทัดสุดท้ายของลูกค้า 15mm
             table_y = table_top_y - table_height
             table.drawOn(c, 20 * mm, table_y)
 
@@ -2158,8 +2163,9 @@ class MainUserWindow(QMainWindow):
             c.drawRightString(right_x - 40 * mm, y_footer - 32 * mm, "Total :")
             c.drawRightString(right_x, y_footer - 32 * mm, f"{order_info['total']:,.2f} THB")
 
-            c.setFont("Helvetica", 24)
-            c.drawCentredString(width / 2.0, 30 * mm, "Thank you, you are my hero!")
+            c.setFont("Helvetica", 20)
+            # ปรับตำแหน่งคำขอบคุณไม่ให้ทับ Footer ถ้าสินค้ายาว
+            c.drawCentredString(width / 2.0, 30 * mm, "Thank bro, you are my hero!")
 
             c.save()
 
@@ -2174,7 +2180,40 @@ class MainUserWindow(QMainWindow):
             QMessageBox.critical(self, "PDF Error", f"Could not create receipt PDF: {e}")
             import traceback
             traceback.print_exc()
-            
+    
+    def handle_view_slip_image(self):
+        order_id = self.current_viewing_order_id
+        if order_id is None:
+            QMessageBox.warning(self, "Error", "No order selected.")
+            return
+
+        try:
+            conn = sqlite3.connect(DB_PATH)
+            cursor = conn.cursor()
+            # ดึง path รูปภาพสลิปจากตาราง orders
+            cursor.execute("SELECT slip_image FROM orders WHERE order_id = ?", (order_id,))
+            result = cursor.fetchone()
+            conn.close()
+
+            if result and result[0]:
+                image_path = result[0]
+                # ตรวจสอบว่าไฟล์มีอยู่จริงหรือไม่
+                if os.path.exists(image_path):
+                    # เปิดไฟล์ภาพด้วยโปรแกรม Default ของเครื่อง (เหมือนที่ใช้เปิด PDF)
+                    if os.name == 'nt': # สำหรับ Windows
+                        os.startfile(image_path)
+                    else: # สำหรับ macOS/Linux (เผื่อไว้)
+                        import subprocess
+                        opener = 'open' if sys.platform == 'darwin' else 'xdg-open'
+                        subprocess.call([opener, image_path])
+                else:
+                     QMessageBox.warning(self, "File Not Found", f"ไม่พบไฟล์รูปภาพที่:\n{image_path}\nไฟล์อาจถูกลบหรือย้ายไปแล้ว")
+            else:
+                QMessageBox.information(self, "No Slip", "คำสั่งซื้อนี้ไม่มีการแนบรูปภาพสลิป")
+
+        except Exception as e:
+            print(f"Error viewing slip image: {e}")
+            QMessageBox.critical(self, "Error", f"เกิดข้อผิดพลาดในการเปิดรูปภาพ: {e}")
             
 
 if __name__ == '__main__':

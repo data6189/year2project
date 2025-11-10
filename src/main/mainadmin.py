@@ -1,12 +1,13 @@
 import sys
 import os
 import sqlite3
-import datetime
+from datetime import datetime
 from PyQt6.QtWidgets import *
 from PyQt6.QtGui import *
 from PyQt6.QtCore import *
 
 DB_PATH = "src/database/thisshop.db" 
+now = datetime.now()
 
 # --- IMPORT สำหรับ Info Window ---
 InfoWindow = None  # กำหนดค่าเริ่มต้นเป็น None ป้องกัน NameError
@@ -38,6 +39,12 @@ class MainAdminWindow(QMainWindow):
         self.current_detail_stock = 0
         
         self.new_comic_img_path = None
+        
+        # --- เพิ่มส่วนนี้สำหรับ Product Detail Edit ---
+        self.is_product_edit_mode = False
+        self.detail_new_img_path = None
+        self.current_detail_img_path = None
+        # -------------------------------------------
 
         self.setWindowTitle(f"Beyond Comics - Admin : {self.current_username}") 
         self.showMaximized()
@@ -150,7 +157,7 @@ class MainAdminWindow(QMainWindow):
         self.btn_manage_comics = QPushButton("Manage Comics")
         self.btn_manage_comics.setObjectName("navButton")
         self.btn_manage_comics.setFixedSize(button_width, button_height)
-        self.btn_manage_comics.clicked.connect(self.show_add_comic_page)
+        self.btn_manage_comics.clicked.connect(self.show_browse_page)
         right_grid.addWidget(self.btn_manage_comics, 1, 0)
         
 
@@ -200,31 +207,45 @@ class MainAdminWindow(QMainWindow):
         sidebar_layout.setAlignment(Qt.AlignmentFlag.AlignTop)
 
         button_height = 55
+        
+        # 1. MARVEL
         btn_marvel = QPushButton("MARVEL")
         btn_marvel.setObjectName("sidebarButton")
         btn_marvel.setFixedHeight(button_height)
         btn_marvel.clicked.connect(lambda: self.filter_products_by_category("MARVEL"))
         sidebar_layout.addWidget(btn_marvel)
 
+        # 2. DC
         btn_dc = QPushButton("DC")
         btn_dc.setObjectName("sidebarButton")
         btn_dc.setFixedHeight(button_height)
         btn_dc.clicked.connect(lambda: self.filter_products_by_category("DC"))
         sidebar_layout.addWidget(btn_dc)
 
+        # 3. Image Comics
         btn_image = QPushButton("Image Comics")
         btn_image.setObjectName("sidebarButton")
         btn_image.setFixedHeight(button_height)
         btn_image.clicked.connect(lambda: self.filter_products_by_category("Image Comics"))
         sidebar_layout.addWidget(btn_image)
 
-        sidebar_layout.addStretch()
-
+        # 4. ALL
         btn_all = QPushButton("ALL")
         btn_all.setObjectName("sidebarButton")
         btn_all.setFixedHeight(button_height)
         btn_all.clicked.connect(lambda: self.filter_products_by_category("ALL"))
         sidebar_layout.addWidget(btn_all)
+
+        # --- เพิ่มปุ่ม Add Comic ---
+        # 5. Add Comic
+        btn_add_comic = QPushButton("Add Comic")
+        btn_add_comic.setObjectName("sidebarButton")  # ใช้ Style เดียวกับปุ่มอื่น
+        btn_add_comic.setFixedHeight(button_height)
+        # เชื่อม signal clicked ไปยังฟังก์ชัน show_add_comic_page ที่มีอยู่แล้ว
+        btn_add_comic.clicked.connect(self.show_add_comic_page)
+        sidebar_layout.addWidget(btn_add_comic)
+        # ------------------------
+
         sidebar_layout.addStretch()
 
         return sidebar_frame
@@ -283,7 +304,7 @@ class MainAdminWindow(QMainWindow):
 
         button_height = 55
 
-        btn_manage = QPushButton("Manage Comics")
+        btn_manage = QPushButton("Add Comic")
         btn_manage.setObjectName("profilesidebarButton")
         btn_manage.setFixedHeight(button_height)
         btn_manage.setEnabled(False) 
@@ -319,7 +340,7 @@ class MainAdminWindow(QMainWindow):
         self.add_comic_img_preview.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.add_comic_img_preview.setStyleSheet("background-color: white; border: 1px solid #ccc;") 
         
-        self.add_comic_upload_button = QPushButton(" Upload Comic image")
+        self.add_comic_upload_button = QPushButton(" Upload Cover image")
         try:
             upload_icon = QIcon(QPixmap("src/img/icon/upload.png")) 
             self.add_comic_upload_button.setIcon(upload_icon)
@@ -389,7 +410,7 @@ class MainAdminWindow(QMainWindow):
         
         right_layout.addWidget(right_form_frame)
 
-        self.add_product_button = QPushButton("Add Product")
+        self.add_product_button = QPushButton("Add Comic")
         self.add_product_button.setObjectName("addProductButton")
         self.add_product_button.setFixedHeight(50)
         self.add_product_button.clicked.connect(self.save_new_comic)
@@ -633,25 +654,47 @@ class MainAdminWindow(QMainWindow):
             error_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
             self.grid_layout.addWidget(error_label, 0, 0)
 
+    # ... (imports และส่วนอื่นๆ ของ class MainAdminWindow)
+
     def create_product_detail_page(self):
         detail_frame = QFrame()
         detail_frame.setObjectName("ProductDetailPage")
         
         main_detail_layout = QHBoxLayout(detail_frame)
+        # --- ห้ามแก้ไข ContentsMargins ---
         main_detail_layout.setContentsMargins(350, 40, 40, 40)
         main_detail_layout.setSpacing(30)
         main_detail_layout.setAlignment(Qt.AlignmentFlag.AlignRight) 
 
         main_detail_layout.addStretch(1) 
 
-        self.detail_cover_label = QLabel("Loading image...")
-        self.detail_cover_label.setObjectName("detailCover")
+        # --- ส่วนซ้าย: รูปภาพ ---
+        left_container = QWidget()
+        left_layout = QVBoxLayout(left_container)
+        left_layout.setSpacing(10)
+        left_layout.setAlignment(Qt.AlignmentFlag.AlignTop | Qt.AlignmentFlag.AlignRight)
+
+        self.detail_cover_label = QLabel()
+        self.detail_cover_label.setObjectName("detailCover") # ตรงกับ CSS
         self.detail_cover_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.detail_cover_label.setFixedSize(250, 380) 
-        main_detail_layout.addWidget(self.detail_cover_label, 0, Qt.AlignmentFlag.AlignRight)
+        
+        self.detail_upload_button = QPushButton(" Change Cover")
+        self.detail_upload_button.setObjectName("detailUploadButton") # ตรงกับ CSS
+        self.detail_upload_button.setIcon(QIcon("src/img/icon/upload.png"))
+        self.detail_upload_button.setIconSize(QSize(40, 40))
+        self.detail_upload_button.setFixedHeight(40)
+        self.detail_upload_button.setVisible(False)
+        self.detail_upload_button.clicked.connect(self.select_detail_image)
+
+        left_layout.addWidget(self.detail_cover_label)
+        left_layout.addWidget(self.detail_upload_button)
+        
+        main_detail_layout.addWidget(left_container, 0, Qt.AlignmentFlag.AlignRight)
 
         main_detail_layout.addStretch(1) 
 
+        # --- ส่วนขวา: ข้อมูล ---
         right_info_widget = QWidget()
         right_info_widget.setFixedWidth(500) 
         right_info_layout = QVBoxLayout(right_info_widget)
@@ -659,151 +702,172 @@ class MainAdminWindow(QMainWindow):
         right_info_layout.setSpacing(15)
         right_info_layout.setAlignment(Qt.AlignmentFlag.AlignTop | Qt.AlignmentFlag.AlignRight) 
 
-        self.detail_name_label = QLabel("Product Name")
-        self.detail_name_label.setObjectName("detailName")
-        self.detail_name_label.setWordWrap(True)
-        self.detail_name_label.setAlignment(Qt.AlignmentFlag.AlignLeft) 
-        right_info_layout.addWidget(self.detail_name_label)
+        self.detail_name_field = QTextEdit()           # <--- ใช้ QTextEdit แทน
+        self.detail_name_field.setObjectName("detailNameField")
+        self.detail_name_field.setPlaceholderText("Product Name")
+        self.detail_name_field.setFixedHeight(80)
+        
+        right_info_layout.addWidget(self.detail_name_field)
         
         line = QFrame()
         line.setFrameShape(QFrame.Shape.HLine)
         line.setFrameShadow(QFrame.Shadow.Sunken)
         right_info_layout.addWidget(line)
 
-        self.detail_desc_label = QTextEdit()
-        self.detail_desc_label.setObjectName("detailDescription")
-        self.detail_desc_label.setReadOnly(True)
-        self.detail_desc_label.setText("Loading description...")
-        self.detail_desc_label.setFixedHeight(150) 
-        right_info_layout.addWidget(self.detail_desc_label)
+        self.detail_desc_field = QTextEdit()
+        self.detail_desc_field.setObjectName("detailDescriptionField") # ตรงกับ CSS
+        self.detail_desc_field.setFixedHeight(120)
+        right_info_layout.addWidget(self.detail_desc_field)
 
         form_widget = QWidget()
         form_layout = QFormLayout(form_widget)
-        form_layout.setSpacing(5)
+        form_layout.setSpacing(8)
         form_layout.setLabelAlignment(Qt.AlignmentFlag.AlignLeft) 
-        form_layout.setFormAlignment(Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter) 
         
-        self.detail_volume_label = QLabel("N/A")
-        self.detail_writer_label = QLabel("N/A")
-        self.detail_rated_label = QLabel("N/A")
-        self.detail_isbn_label = QLabel("N/A") 
-        self.detail_stock_label = QLabel("N/A")
+        self.detail_volume_field = QLineEdit()
+        self.detail_writer_field = QLineEdit()
+        self.detail_rated_field = QLineEdit()
+        self.detail_isbn_field = QLineEdit()
+        self.detail_category_field = QComboBox()
+        self.detail_category_field.addItems(["MARVEL", "DC", "Image Comics"])
+        self.detail_stock_field = QLineEdit()
+        self.detail_price_field = QLineEdit()
         
-        for label in [self.detail_volume_label, self.detail_writer_label, 
-                      self.detail_rated_label, self.detail_isbn_label, self.detail_stock_label]:
-            label.setObjectName("detailFormValue") 
-            label.setAlignment(Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter)
-
-        form_rows_data = [
-            ("Volume/Issue :", self.detail_volume_label),
-            ("Writer :", self.detail_writer_label),
-            ("Rated :", self.detail_rated_label),
-            ("ISBN :", self.detail_isbn_label),
-            ("Stock :", self.detail_stock_label)
+        # กำหนด Object Name ให้เหมือนกันเพื่อใช้ CSS ร่วมกันได้ง่าย
+        self.product_editable_fields = [
+            self.detail_volume_field, self.detail_writer_field,
+            self.detail_rated_field, self.detail_isbn_field,
+            self.detail_category_field, self.detail_stock_field,
+            self.detail_price_field
         ]
+        for field in self.product_editable_fields:
+             field.setObjectName("detailValueField")
 
-        for label_text, value_widget in form_rows_data:
-            label_header = QLabel(label_text)
-            label_header.setObjectName("detailFormLabel") 
-            form_layout.addRow(label_header, value_widget)
-        
+        self.detail_price_field.setObjectName("detailPriceField") # แยกราคาออกมาเพื่อทำสีพิเศษ
+
+        # เพิ่ม Label ที่มี Object Name ตรงกับ CSS
+        def add_row(label_text, field):
+            label = QLabel(label_text)
+            label.setObjectName("detailFormLabel")
+            form_layout.addRow(label, field)
+
+        add_row("Volume/Issue :", self.detail_volume_field)
+        add_row("Writer :", self.detail_writer_field)
+        add_row("Rated :", self.detail_rated_field)
+        add_row("ISBN (ID) :", self.detail_isbn_field)
+        add_row("Category :", self.detail_category_field)
+        add_row("Stock :", self.detail_stock_field)
+        add_row("Price (THB) :", self.detail_price_field)
+
         right_info_layout.addWidget(form_widget)
-        
-        self.detail_price_label = QLabel("Price : 0.00 THB")
-        self.detail_price_label.setObjectName("detailPrice")
-        self.detail_price_label.setAlignment(Qt.AlignmentFlag.AlignRight) 
-        right_info_layout.addWidget(self.detail_price_label)
-        
         right_info_layout.addStretch() 
-        
+
+        # --- Buttons ---
+        buttons_layout = QHBoxLayout()
+        buttons_layout.setSpacing(15)
+
+        self.btn_edit_product = QPushButton(" Edit")
+        self.btn_edit_product.setObjectName("editButton") # หรือใช้ชื่อเดิมถ้ามี style อยู่แล้ว
+        self.btn_edit_product.setIcon(QIcon("src/img/icon/edit.png"))
+        self.btn_edit_product.setIconSize(QSize(50, 50))
+        self.btn_edit_product.setFixedHeight(55)
+        self.btn_edit_product.clicked.connect(self.toggle_product_edit_mode)
+
+        self.btn_confirm_product = QPushButton(" Confirm")
+        self.btn_confirm_product.setObjectName("confirmButton")
+        self.btn_confirm_product.setIcon(QIcon("src/img/icon/confirm.png"))
+        self.btn_confirm_product.setIconSize(QSize(50, 50))
+        self.btn_confirm_product.setFixedHeight(55)
+        self.btn_confirm_product.setVisible(False)
+        self.btn_confirm_product.clicked.connect(self.save_product_changes)
+
+        self.btn_cancel_edit = QPushButton(" Cancel")
+        self.btn_cancel_edit.setObjectName("cancelButton")
+        self.btn_cancel_edit.setIcon(QIcon("src/img/icon/delete.png")) # เปลี่ยนไอคอนตามเหมาะสม
+        self.btn_cancel_edit.setIconSize(QSize(50, 50))
+        self.btn_cancel_edit.setFixedHeight(55)
+        self.btn_cancel_edit.setVisible(False)
+        self.btn_cancel_edit.clicked.connect(self.cancel_product_edit)
+
+        self.btn_delete_product = QPushButton(" Delete")
+        self.btn_delete_product.setObjectName("deleteButton")
+        self.btn_delete_product.setIcon(QIcon("src/img/icon/delete.png"))
+        self.btn_delete_product.setIconSize(QSize(50, 50))
+        self.btn_delete_product.setFixedHeight(55)
+        self.btn_delete_product.clicked.connect(self.delete_product)
+
+        buttons_layout.addWidget(self.btn_edit_product, 1)
+        buttons_layout.addWidget(self.btn_cancel_edit, 1)
+        buttons_layout.addWidget(self.btn_confirm_product, 1)
+        buttons_layout.addWidget(self.btn_delete_product, 1)
+
+        right_info_layout.addLayout(buttons_layout)
         main_detail_layout.addWidget(right_info_widget, 0, Qt.AlignmentFlag.AlignRight) 
 
+        self.set_product_fields_read_only(True)
         return detail_frame
 
     def load_product_details(self, product_id):
-        self.detail_name_label.setText("Loading...")
-        self.detail_desc_label.setText("Loading details...")
-        self.detail_volume_label.setText("N/A")
-        self.detail_writer_label.setText("N/A")
-        self.detail_rated_label.setText("N/A")
-        self.detail_isbn_label.setText("N/A") 
-        self.detail_stock_label.setText("N/A")
-        self.detail_price_label.setText("Price : N/A")
-        
-        self.current_detail_product_id = None
-        self.current_detail_stock = 0
-        
-        placeholder_pixmap = QPixmap(self.detail_cover_label.size())
-        placeholder_pixmap.fill(Qt.GlobalColor.white)
-        self.detail_cover_label.setPixmap(placeholder_pixmap)
+        # รีเซ็ตสถานะการแก้ไขเมื่อโหลดสินค้าใหม่
+        self.is_product_edit_mode = False
+        self.set_product_fields_read_only(True)
+        self.btn_edit_product.setVisible(True)
+        self.btn_confirm_product.setVisible(False)
+        self.btn_cancel_edit.setVisible(False) # ซ่อนปุ่ม Cancel
+        self.btn_delete_product.setVisible(True) # แสดงปุ่ม Delete
+        self.detail_upload_button.setVisible(False)
+        self.detail_new_img_path = None
+
+        self.current_detail_product_id = product_id
         
         try:
-            if not os.path.exists(DB_PATH):
-                raise FileNotFoundError(f"Database not found at {DB_PATH}")
-
             conn = sqlite3.connect(DB_PATH)
             cursor = conn.cursor()
-            
+            # เพิ่มการดึงข้อมูล category
             cursor.execute("""
-                SELECT name, description, volume_issue, writer, rated, id, stock, price, cover_img 
-                FROM product 
-                WHERE id = ?
+                SELECT name, description, volume_issue, writer, rated, id, category, stock, price, cover_img 
+                FROM product WHERE id = ?
             """, (product_id,))
-            
             product_data = cursor.fetchone()
             conn.close()
 
             if product_data:
                 (name, description, volume_issue, writer, rated, 
-                 id, stock, price, cover_img) = product_data
+                 pid, category, stock, price, cover_img) = product_data
                 
-                self.detail_name_label.setText(name or "N/A")
-                self.detail_desc_label.setText(description or "No description available.")
-                self.detail_volume_label.setText(volume_issue or "N/A")
-                self.detail_writer_label.setText(writer or "N/A")
-                self.detail_rated_label.setText(rated or "N/A")
-                self.detail_isbn_label.setText(str(id) if id is not None else "N/A")
+                self.detail_name_field.setText(name or "")
+                self.detail_desc_field.setText(description or "")
+                self.detail_volume_field.setText(volume_issue or "")
+                self.detail_writer_field.setText(writer or "")
+                self.detail_rated_field.setText(rated or "")
+                self.detail_isbn_field.setText(str(pid) if pid is not None else "")
                 
-                stock_available = stock if stock is not None else 0
-                self.detail_stock_label.setText(str(stock_available))
-                self.detail_price_label.setText(f"Price : {price:.2f} THB" if price is not None else "Price : N/A")
+                # ตั้งค่า Category ComboBox
+                cat_index = self.detail_category_field.findText(category or "", Qt.MatchFlag.MatchFixedString)
+                if cat_index >= 0:
+                    self.detail_category_field.setCurrentIndex(cat_index)
 
-                self.current_detail_product_id = id
-                self.current_detail_stock = stock_available
+                self.detail_stock_field.setText(str(stock) if stock is not None else "0")
+                self.detail_price_field.setText(f"{price:.2f}" if price is not None else "0.00")
 
-                pixmap = None
-                if cover_img and os.path.exists(cover_img):
-                    pixmap = QPixmap(cover_img)
-                else:
-                    print(f"คำเตือน: ไม่พบรูป detail '{cover_img}' สำหรับ ID {product_id}. ใช้ placeholder")
-                    pixmap = QPixmap("src/img/icon/profile.png") 
+                self.current_detail_stock = stock if stock is not None else 0
+                self.current_detail_img_path = cover_img
+
+                # โหลดรูปภาพ
+                pixmap = QPixmap(cover_img) if cover_img and os.path.exists(cover_img) else QPixmap("src/img/icon/profile.png")
+                if pixmap.isNull(): pixmap = QPixmap(250, 380); pixmap.fill(Qt.GlobalColor.gray)
                 
-                if pixmap.isNull():
-                    pixmap = QPixmap(self.detail_cover_label.size())
-                    pixmap.fill(Qt.GlobalColor.gray) 
-
-                scaled_pixmap = pixmap.scaled(
-                    self.detail_cover_label.size(),
-                    Qt.AspectRatioMode.KeepAspectRatio,
-                    Qt.TransformationMode.SmoothTransformation
-                )
-                self.detail_cover_label.setPixmap(scaled_pixmap)
+                self.detail_cover_label.setPixmap(pixmap.scaled(
+                    self.detail_cover_label.size(), Qt.AspectRatioMode.KeepAspectRatio, Qt.TransformationMode.SmoothTransformation
+                ))
 
             else:
-                self.detail_name_label.setText("Product Not Found")
-                self.detail_desc_label.setText(f"No product with ID '{product_id}' was found in the database.")
-                pixmap = QPixmap(self.detail_cover_label.size())
-                pixmap.fill(Qt.GlobalColor.white) 
-                self.detail_cover_label.setPixmap(pixmap)
-                print(f"ไม่พบสินค้าที่มี ID: {product_id}")
+                QMessageBox.warning(self, "Error", "Product not found.")
+                self.show_browse_page()
 
         except Exception as e:
-            print(f"เกิดข้อผิดพลาดในการโหลดรายละเอียดสินค้า (ID: {product_id}): {e}")
-            self.detail_name_label.setText(f"Error Loading Product")
-            self.detail_desc_label.setText(f"An error occurred: {e}. Please try again or check the database.")
-            pixmap = QPixmap(self.detail_cover_label.size())
-            pixmap.fill(Qt.GlobalColor.lightGray) 
-            self.detail_cover_label.setPixmap(pixmap)
+            print(f"Error loading product details: {e}")
+            QMessageBox.warning(self, "Error", f"Could not load details: {e}")
 
     def show_product_detail_page(self, product_id):
         print(f"กำลังแสดงรายละเอียดสำหรับ ID: {product_id}")
@@ -811,6 +875,175 @@ class MainAdminWindow(QMainWindow):
         self.sidebar_stack.setCurrentIndex(2)
         self.main_content_stack.setCurrentIndex(2)
 
+    # --- METHODS สำหรับการแก้ไขและลบสินค้า ---
+
+    def set_product_fields_read_only(self, read_only):
+        """ตั้งค่าสถานะ Read-Only ให้กับฟิลด์ข้อมูลสินค้า"""
+        self.detail_name_field.setReadOnly(read_only)
+        self.detail_desc_field.setReadOnly(read_only)
+        for field in self.product_editable_fields:
+            if isinstance(field, (QLineEdit, QTextEdit)):
+                field.setReadOnly(read_only)
+            elif isinstance(field, QComboBox):
+                field.setEnabled(not read_only)
+
+    def toggle_product_edit_mode(self):
+        """สลับโหมดแก้ไขสินค้า"""
+        self.is_product_edit_mode = True # เข้าสู่โหมดแก้ไขแน่นอนเมื่อกดปุ่ม Edit
+        
+        # เข้าสู่โหมดแก้ไข
+        self.set_product_fields_read_only(False)
+        # ไม่ต้องล็อก ISBN แล้วตามที่คุณต้องการ
+        # self.detail_isbn_field.setReadOnly(True) 
+        
+        # จัดการการแสดงผลปุ่ม
+        self.btn_edit_product.setVisible(False)
+        self.btn_delete_product.setVisible(False) # ซ่อนปุ่ม Delete ขณะแก้ไขเพื่อป้องกันความสับสน
+        self.btn_confirm_product.setVisible(True)
+        self.btn_cancel_edit.setVisible(True) # แสดงปุ่ม Cancel
+        self.detail_upload_button.setVisible(True)
+
+    def cancel_product_edit(self):
+        """ยกเลิกการแก้ไขและโหลดข้อมูลเดิมกลับมา"""
+        self.is_product_edit_mode = False
+        self.load_product_details(self.current_detail_product_id)
+
+    def save_product_changes(self):
+        """บันทึกการแก้ไขสินค้าลง Database (รวมถึงการแก้ ID)"""
+        try:
+            # ดึงข้อมูลจากฟิลด์
+            new_id_str = self.detail_isbn_field.text().strip() # ดึง ID ใหม่
+            name = self.detail_name_field.toPlainText().strip()
+            desc = self.detail_desc_field.toPlainText().strip()
+            volume = self.detail_volume_field.text().strip()
+            writer = self.detail_writer_field.text().strip()
+            rated = self.detail_rated_field.text().strip()
+            category = self.detail_category_field.currentText()
+            stock_str = self.detail_stock_field.text().strip()
+            price_str = self.detail_price_field.text().strip()
+            img_path = self.detail_new_img_path if self.detail_new_img_path else self.current_detail_img_path
+
+            if not all([new_id_str, name, stock_str, price_str]):
+                 QMessageBox.warning(self, "Missing Info", "Please fill in ID, Name, Stock, and Price.")
+                 return
+
+            new_id = int(new_id_str)
+            stock = int(stock_str)
+            price = float(price_str)
+
+            conn = sqlite3.connect(DB_PATH)
+            cursor = conn.cursor()
+
+            # ถ้ามีการเปลี่ยน ID ต้องเช็คก่อนว่า ID ใหม่ซ้ำไหม
+            if new_id != self.current_detail_product_id:
+                cursor.execute("SELECT 1 FROM product WHERE id = ?", (new_id,))
+                if cursor.fetchone():
+                    QMessageBox.warning(self, "Duplicate ID", f"Product ID {new_id} already exists. Please use a unique ID.")
+                    conn.close()
+                    return
+
+            # อัปเดตข้อมูล (รวมถึง ID)
+            cursor.execute("""
+                UPDATE product 
+                SET id=?, name=?, description=?, volume_issue=?, writer=?, rated=?, category=?, stock=?, price=?, cover_img=?
+                WHERE id=?
+            """, (new_id, name, desc, volume, writer, rated, category, stock, price, img_path, self.current_detail_product_id))
+            
+            conn.commit()
+            conn.close()
+
+            QMessageBox.information(self, "Success", "Product updated successfully!")
+            # โหลดข้อมูลใหม่โดยใช้ ID ใหม่ (ถ้ามีการเปลี่ยน)
+            self.load_product_details(new_id) 
+
+        except ValueError:
+             QMessageBox.warning(self, "Invalid Input", "ID and Stock must be integers, Price must be a number.")
+        except sqlite3.IntegrityError:
+             QMessageBox.warning(self, "Database Error", "ID might already exist or other constraint failed.")
+        except Exception as e:
+            print(f"Error saving product: {e}")
+            QMessageBox.warning(self, "Error", f"Could not save changes: {e}")
+
+    def select_detail_image(self):
+        """เลือกรูปภาพใหม่สำหรับสินค้าในหน้า Detail"""
+        file_path, _ = QFileDialog.getOpenFileName(
+            self, "Select Cover Image", "", "Images (*.png *.jpg *.jpeg *.bmp)"
+        )
+        if file_path:
+            self.detail_new_img_path = os.path.normpath(file_path)
+            pixmap = QPixmap(self.detail_new_img_path)
+            self.detail_cover_label.setPixmap(pixmap.scaled(
+                self.detail_cover_label.size(), Qt.AspectRatioMode.KeepAspectRatio, Qt.TransformationMode.SmoothTransformation
+            ))
+
+    def save_product_changes(self):
+        """บันทึกการแก้ไขสินค้าลง Database"""
+        try:
+            # ดึงข้อมูลจากฟิลด์
+            name = self.detail_name_field.text().strip()
+            desc = self.detail_desc_field.toPlainText().strip()
+            volume = self.detail_volume_field.text().strip()
+            writer = self.detail_writer_field.text().strip()
+            rated = self.detail_rated_field.text().strip()
+            category = self.detail_category_field.currentText()
+            stock_str = self.detail_stock_field.text().strip()
+            price_str = self.detail_price_field.text().strip()
+            
+            # ใช้รูปใหม่ถ้ามีการอัปโหลด ถ้าไม่ใช้รูปเดิม
+            img_path = self.detail_new_img_path if self.detail_new_img_path else self.current_detail_img_path
+
+            # Validation พื้นฐาน
+            if not all([name, stock_str, price_str]):
+                 QMessageBox.warning(self, "Missing Info", "Please fill in Name, Stock, and Price.")
+                 return
+
+            stock = int(stock_str)
+            price = float(price_str)
+
+            conn = sqlite3.connect(DB_PATH)
+            cursor = conn.cursor()
+            cursor.execute("""
+                UPDATE product 
+                SET name=?, description=?, volume_issue=?, writer=?, rated=?, category=?, stock=?, price=?, cover_img=?
+                WHERE id=?
+            """, (name, desc, volume, writer, rated, category, stock, price, img_path, self.current_detail_product_id))
+            conn.commit()
+            conn.close()
+
+            QMessageBox.information(self, "Success", "Product updated successfully!")
+            self.load_product_details(self.current_detail_product_id) # โหลดข้อมูลใหม่และออกจากโหมดแก้ไข
+
+        except ValueError:
+             QMessageBox.warning(self, "Invalid Input", "Stock must be an integer and Price must be a number.")
+        except Exception as e:
+            print(f"Error saving product: {e}")
+            QMessageBox.warning(self, "Error", f"Could not save changes: {e}")
+
+    def delete_product(self):
+        """ลบสินค้าออกจาก Database"""
+        # ถามยืนยันก่อนลบ
+        reply = QMessageBox.question(
+            self, 'Confirm Delete', 
+            f"Are you sure you want to delete this product?\n(ID: {self.current_detail_product_id})",
+            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No, 
+            QMessageBox.StandardButton.No
+        )
+
+        if reply == QMessageBox.StandardButton.Yes:
+            try:
+                conn = sqlite3.connect(DB_PATH)
+                cursor = conn.cursor()
+                cursor.execute("DELETE FROM product WHERE id = ?", (self.current_detail_product_id,))
+                conn.commit()
+                conn.close()
+
+                QMessageBox.information(self, "Deleted", "Product has been deleted.")
+                self.show_browse_page() # กลับไปหน้า Browse
+
+            except Exception as e:
+                print(f"Error deleting product: {e}")
+                QMessageBox.warning(self, "Error", f"Could not delete product: {e}")
+        
     def create_profile_page(self):
         profile_frame = QFrame()
         profile_frame.setObjectName("ProfilePage") 
@@ -1119,7 +1352,7 @@ class MainAdminWindow(QMainWindow):
         
         self.new_comic_img_path = None
         self.add_comic_img_preview.clear()
-        self.add_comic_img_preview.setText("Upload Comic image")
+        self.add_comic_img_preview.setText("Upload Cover")
         self.add_comic_img_preview.setStyleSheet("background-color: white; border: 1px solid #ccc;")
 
     def select_new_comic_image(self):
@@ -1170,7 +1403,7 @@ class MainAdminWindow(QMainWindow):
                                     f"Please enter valid numbers for ISBN, Stock, and Price.\n(Error: {e})")
                 return
 
-            created_at = datetime.datetime.now().isoformat()
+            created_at = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
             conn = sqlite3.connect(DB_PATH)
             cursor = conn.cursor()
@@ -1180,7 +1413,7 @@ class MainAdminWindow(QMainWindow):
                                     "A product with this ISBN (ID) already exists. Please use a unique ID.")
                 conn.close()
                 return
-
+            
             cursor.execute("""
                 INSERT INTO product (
                     id, name, volume_issue, description, writer, rated, 

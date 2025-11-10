@@ -68,12 +68,6 @@ QPushButton#btn_info {
 
 
 
-/* (นี่คือ #MainContent เดิมของคุณ) */
-/* (เปลี่ยนชื่อเป็น #MainContent, #ProfilePage) */
-/*#MainContent, #ProfilePage {
-    background-color: rgba(255, 255, 255, 0.5); /* พื้นหลังสีขาว โปร่งแสงเล็กน้อย */     
-/*    border-radius: 1px;
-}
 
 /* (ปุ่ม Search เดิม) */
 QPushButton#searchButton {
@@ -332,69 +326,49 @@ QLabel#noComicsLabel {
 }
 
 /* ----------------------------------------------------------
-   3. รายละเอียด (detail_desc_label - QTextEdit)
    ---------------------------------------------------------- */
-#detailDescription {
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+/* ... (ส่วนอื่นๆ ก่อนหน้าเหมือนเดิม) ... */
+
+/* --- Product Detail Page Styles --- */
+
+/* ชื่อสินค้า (Read-Only) */
+QTextEdit#detailNameField {
+    border: none;
+    background: transparent;
+    font-weight: bold;
+    font-size: 32px;     /* ปรับขนาดตัวอักษรตามชอบ */
+    color: #000000;
+    padding: 0px;
+}
+
+/* คำอธิบาย (Read-Only) */
+QTextEdit#detailDescriptionField:read-only {
     background-color: white;
     border: 1px solid #CCCCCC;
     border-radius: 5px;
     padding: 10px;
-    color: #444444;
+    color: #000000;
     font-size: 11pt;
     line-height: 1.5; /* ระยะห่างบรรทัด */
 }
 
-/* ปรับ Scrollbar ให้อ่อนลง */
-#detailDescription QScrollBar:vertical {
-    border: none;
-    background: #F0F0F0;
-    width: 10px;
-}
-#detailDescription QScrollBar::handle:vertical {
-    background: #CCCCCC;
-    min-height: 20px;
-    border-radius: 5px;
-}
-#detailDescription QScrollBar::handle:vertical:hover {
-    background: #AAAAAA;
-}
-
-
-/* ----------------------------------------------------------
-   5. ราคาและปุ่ม (Price & Add Cart Button)
-   ---------------------------------------------------------- */
-
-#detailPrice {
-    color: #000000; /* สีแดงโดดเด่นสำหรับราคา */
-    font-size: 16pt;
-    font-weight: 700;
-    padding: 10px 0;
-    margin-right: 10px; /* เว้นระยะห่างจากปุ่ม */
-    min-height: 30px; /* ให้สูงเท่าปุ่มเพื่อจัดแนว */
-}
-
-#addToCartButton {
-    background-color: #007BFF; /* สีน้ำเงินหลัก */
-    color: white;
-    font-size: 14pt;
-    font-weight: 700;
-    border-radius: 8px;
-    padding: 5px 15px;
-    min-width: 150px;
-}
-
-#addToCartButton:hover {
-    background-color: #0056b3;
-}
-
+/* ป้ายกำกับฟอร์ม */
 QLabel#detailFormLabel {
-    color: #000000; /* สีเทาเข้ม (ตัวอย่าง) */
-    font-weight: bold;
-    font-size: 14px;
-    padding-right: 10px; /* เพิ่มช่องว่างระหว่าง : กับ ค่า (ตัวอย่าง) */
-}
-
-QLabel#detailFormValue {
     color: #000000;
     font-weight: bold;
     font-size: 14px; /* คุณสามารถปรับขนาดได้ตามต้องการ */
@@ -402,130 +376,104 @@ QLabel#detailFormValue {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-/* ----------------------------------------------- */
-/* --- สไตล์สำหรับหน้า Product Detail (Quantity) --- */
-/* ----------------------------------------------- */
-
-/* 1. สไตล์สำหรับ Label "QUANTITY :" */
-QLabel#quantityLabel {
+/* ข้อมูลฟอร์มทั่วไป (Read-Only) */
+QLineEdit#detailValueField:read-only {
+    border: none;
+    background: transparent;
     font-size: 16px;
-    font-weight: bold;
-    color: #333333; /* สีเทาเข้ม (ตัวอย่าง) */
-    padding-right: 5px; /* เพิ่มช่องว่างด้านขวาเล็กน้อย */
-    
-    /* หากต้องการให้เหมือน detailFormLabel */
-    /*
-    font-size: 16px;
-    font-weight: bold;
-    color: #5D5D5D; 
-    */
-}
-
-
-/* 2. สไตล์สำหรับกล่อง SpinBox (ตัวเลือกจำนวน) */
-QSpinBox#quantitySpinBox {
-    font-size: 16px;
-    font-weight: bold;
-    color: #000000; /* สีตัวเลขด้านใน */
-    background-color: #FFFFFF; /* พื้นหลังกล่อง */
-    border: 1px solid #CCCCCC; /* สีกรอบ */
-    border-radius: 5px;
-    padding: 5px; /* ระยะห่างภายใน */
-    
-    /* (สำคัญ) ตั้งค่าขนาดความกว้าง/สูง ที่นี่ หรือในโค้ด Python (ตอนนี้ตั้งในโค้ด) */
-    /* min-width: 60px; */
-}
-
-/* 2.1 สไตล์เมื่อ SpinBox ถูกปิดใช้งาน (เช่น ของหมด) */
-QSpinBox#quantitySpinBox:disabled {
-    background-color: #EEEEEE; /* สีเทาอ่อน */
-    color: #999999; /* สีตัวเลขจางๆ */
-}
-
-QSpinBox#quantitySpinBox {
-    /* * กำหนดสไตล์ของ "กล่อง" หลัก 
-     * (คุณอาจจะต้องปรับ padding-right เพื่อเว้นที่ให้ลูกศร)
-     */
-    background-color: white;
-    border: 1px solid #c0c0c0; /* สีเทาอ่อน */
-    border-radius: 4px;
-    font-size: 16px;
-    padding-right: 20px; /* (สำคัญ) เว้นที่ให้ปุ่มลูกศร */
+    color: #000000;
     padding-left: 5px;
-    min-width: 60px; /* กำหนดขนาดขั้นต่ำ */
 }
 
-/* * (สำคัญ) นี่คือส่วน "ปุ่มลูกศรขึ้น" 
- */
-QSpinBox#quantitySpinBox::up-button {
-    width: 20px; /* ความกว้างของปุ่ม */
-    height: 17px; /* ความสูง (ประมาณครึ่งหนึ่ง) */
-    border-bottom: 1px solid #c0c0c0; /* เส้นแบ่งตรงกลาง */
-    border-left: 1px solid #c0c0c0;   /* เส้นแบ่งด้านซ้าย */
-    border-top-right-radius: 4px;     /* ทำให้มุมบนขวาโค้งมน */
+QComboBox#detailValueField:read-only {
+    border: none;
+    background: transparent;
+    font-size: 16px;
+    color: #000000;
+    padding-left: 5px;
 }
 
-/* * (สำคัญ) นี่คือส่วน "ปุ่มลูกศรลง" 
- */
-QSpinBox#quantitySpinBox::down-button {
-    width: 20px; /* ความกว้างของปุ่ม */
-    height: 17px; /* ความสูง (ประมาณครึ่งหนึ่ง) */
-    border-left: 1px solid #c0c0c0;
-    border-top: 1px solid #c0c0c0;     /* เส้นแบ่งด้านซ้าย */
-    border-bottom-right-radius: 4px;  /* ทำให้มุมล่างขวาโค้งมน */
+/* ราคา (Read-Only) */
+QLineEdit#detailPriceField:read-only {
+    border: none;
+    background: transparent;
+    font-size: 16px;
+    color: #000000;
+    padding-left: 5px;
 }
 
-/* * (สำคัญ) นี่คือส่วน "รูปลูกศร" ที่อยู่บนปุ่ม 
- */
-QSpinBox#quantitySpinBox::up-arrow {
-    /* * เราสามารถใช้ "border" tricks เพื่อสร้างสามเหลี่ยม
-     * หรือใช้รูปภาพ (image) ก็ได้
-     */
-    image: url(src/img/icon/up.png); /* (ตัวอย่าง) ต้องมีไฟล์นี้ */
-    width: 10px;
-    height: 10px;
+/* --- Edit Mode (เมื่อแก้ไข) --- */
+QFrame#ProductDetailPage QComboBox:enabled {
+    background-color: #FFFFFF;
+    font-size: 14px;
+    color: #000000;
 }
 
-QSpinBox#quantitySpinBox::down-arrow {
-    image: url(src/img/icon/down.png); /* (ตัวอย่าง) ต้องมีไฟล์นี้ */
-    width: 10px;
-    height: 10px;
+QFrame#ProductDetailPage QComboBox QAbstractItemView {
+    background-color: #ebebeb;
+    color: #000000;
 }
 
-/* (ทางเลือก) สไตล์ตอนกดปุ่ม */
-QSpinBox#quantitySpinBox::up-button:pressed {
-    background-color: #eeeeee; /* สีเทาอ่อนตอนกด */
+/* --- Buttons in Detail Page --- */
+
+/* ใช้สไตล์พื้นฐานร่วมกัน */
+QPushButton#editButton, QPushButton#confirmButton, 
+QPushButton#cancelButton, QPushButton#deleteButton {
+    border-radius: 10px;
+    font-weight: bold;
+    font-size: 16px;
+    color: rgb(0, 0, 0);
 }
 
-QSpinBox#quantitySpinBox::down-button:pressed {
-    background-color: #eeeeee; /* สีเทาอ่อนตอนกด */
+/* ปุ่ม Edit (สีฟ้า) */
+QPushButton#editButton {
+    border: 1px solid #000000;
+    background: transparent;
+}
+QPushButton#editButton:hover {
+    background-color: #007acc;
 }
 
+/* ปุ่ม Confirm (สีเขียว) */
+QPushButton#confirmButton {
+    border: 1px solid #000000;
+    background: transparent;
+}
+QPushButton#confirmButton:hover {
+    background-color: #28a745;
+}
 
+/* ปุ่ม Cancel (สีเทา) */
+QPushButton#cancelButton {
+    border: 1px solid #000000;
+    background: transparent;
+}
+QPushButton#cancelButton:hover {
+    background-color: #d9534f;
+}
 
+/* ปุ่ม Delete (สีแดง) */
+QPushButton#deleteButton {
+    border: 1px solid #000000;
+    background: transparent;
+}
+QPushButton#deleteButton:hover {
+    background-color: #d9534f;
+}
 
+/* ปุ่มเปลี่ยนรูป */
+QPushButton#detailUploadButton {
+    background: transparent;
+    border: 1px solid #000000;
+    color: rgb(0, 0, 0);
+    border-radius: 5px;
+    font-weight: bold;
+    font-size: 14px;
+}
+QPushButton#detailUploadButton:hover {
+    border: 1px solid #000000;
+    background-color: #007acc;
+}
 
 
 
@@ -993,7 +941,7 @@ QPushButton#sidebarButtonActive:hover{
 
 
 #addComicField:focus {
-    border: 1px solid #FCA510; /* (สีส้มเมื่อถูกคลิก) */
+    border: 1px solid #007BFF; /* (สีส้มเมื่อถูกคลิก) */
 }
 
 #addComicField QAbstractItemView {
@@ -1006,7 +954,7 @@ QPushButton#sidebarButtonActive:hover{
 
 /* (4) ปุ่ม Add Product (ปุ่มหลักสีเหลือง/ส้ม) */
 #addProductButton {
-    background-color: #FCA510; /* (สีส้ม) */
+    background-color: #007BFF; /* (สีส้ม) */
     color: #FFFFFF; /* (สีขาว) */
     font-size: 16px;
     font-weight: bold;
@@ -1016,6 +964,6 @@ QPushButton#sidebarButtonActive:hover{
 }
 
 #addProductButton:hover {
-    background-color: #FFC107; /* (สีเหลืองสว่าง) */
+    background-color: #0056b3; /* (สีเหลืองสว่าง) */
     color: #333333;
 }
