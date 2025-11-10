@@ -4,11 +4,11 @@ QMainWindow {
 
 /* === Feedback Title === */
 QLabel#feedback_title {
-    color: #0056b3;
-    border:1px solid #007BFF;
-    padding: 8px;
-    border-radius: 5px;
-    /* font-family และ size ถูกกำหนดไว้ใน Python แล้ว แต่สามารถ override ที่นี่ได้ถ้าต้องการ */
+    color: #ffffff;
+    background-color: #000000;
+    font-weight: bold;
+    padding: 12px;
+    border-radius: 10px;
 }
 
 /* === Feedback Input Box === */

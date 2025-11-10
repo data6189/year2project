@@ -86,7 +86,8 @@ class FeedbackOverlay(QWidget):
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
                     user_id TEXT,
                     feedback_text TEXT,
-                    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+                    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                    Note TEXT
                 )
             """)
             cursor.execute("INSERT INTO feedback (user_id, feedback_text) VALUES (?, ?)", 
@@ -142,5 +143,5 @@ if __name__ == '__main__':
     # --- [MERGED] ลบการเรียก load_stylesheet(app, ...) จากตรงนี้ ---
     # เพราะ InfoWindow จะโหลดสไตล์ของมันเองแล้ว
 
-    win = InfoWindow(user_id="test_admin")
+    win = InfoWindow(user_id="guest")
     sys.exit(app.exec())

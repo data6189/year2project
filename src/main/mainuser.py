@@ -63,7 +63,7 @@ class MainUserWindow(QMainWindow):
         # [NEW] เตรียมฟอนต์สำหรับ PDF
         self.init_receipt_font()
 
-        self.setWindowTitle(f"Beyond Comics - Welcome {self.current_username}")
+        self.setWindowTitle(f"Beyond Comics - Welcome : {self.current_username}")
         self.showMaximized()
 
         self.central_widget = QWidget()
@@ -291,11 +291,11 @@ class MainUserWindow(QMainWindow):
         btn_cart = QPushButton("CART")
         btn_cart.setObjectName("sidebarButtonActive")
         btn_cart.setFixedHeight(button_height)
-        btn_cart.setEnabled(False)
+        btn_cart.clicked.connect(self.show_cart_page)
         sidebar_layout.addWidget(btn_cart)
 
         btn_orders = QPushButton("Your Orders")
-        btn_orders.setObjectName("sidebarButton")
+        btn_orders.setObjectName("sidebarButtonActive")
         btn_orders.setFixedHeight(button_height)
         btn_orders.clicked.connect(self.show_orders_page)
         sidebar_layout.addWidget(btn_orders)
@@ -325,7 +325,7 @@ class MainUserWindow(QMainWindow):
         sidebar_layout.addWidget(btn_cart)
 
         btn_orders = QPushButton("Your Orders")
-        btn_orders.setObjectName("sidebarButton")
+        btn_orders.setObjectName("sidebarButtonActive")
         btn_orders.setFixedHeight(button_height)
         btn_orders.clicked.connect(self.show_orders_page)
         sidebar_layout.addWidget(btn_orders)
@@ -349,7 +349,7 @@ class MainUserWindow(QMainWindow):
 
         button_height = 55
         btn_cart = QPushButton("CART")
-        btn_cart.setObjectName("sidebarButton")
+        btn_cart.setObjectName("sidebarButtonActive")
         btn_cart.setFixedHeight(button_height)
         btn_cart.clicked.connect(self.show_cart_page)
         sidebar_layout.addWidget(btn_cart)
@@ -357,7 +357,7 @@ class MainUserWindow(QMainWindow):
         btn_orders = QPushButton("Your Orders")
         btn_orders.setObjectName("sidebarButtonActive")
         btn_orders.setFixedHeight(button_height)
-        btn_orders.setEnabled(False)
+        btn_orders.clicked.connect(self.show_orders_page)
         sidebar_layout.addWidget(btn_orders)
 
         btn_back = QPushButton("Back")
@@ -379,7 +379,7 @@ class MainUserWindow(QMainWindow):
 
         button_height = 55
         btn_cart = QPushButton("CART")
-        btn_cart.setObjectName("sidebarButton")
+        btn_cart.setObjectName("sidebarButtonActive")
         btn_cart.setFixedHeight(button_height)
         btn_cart.clicked.connect(self.show_cart_page)
         sidebar_layout.addWidget(btn_cart)
@@ -912,6 +912,7 @@ class MainUserWindow(QMainWindow):
         row_vat, self.vat_label = create_summary_row("VAT 7% :")
         row_total, self.total_label = create_summary_row("Total :", "cartTotalValue", is_total=True)
 
+        
         footer_layout.addWidget(row_sub)  # SUBTOTAL
         footer_layout.addWidget(row_ship)  # SHIPPING
         footer_layout.addWidget(row_vat)  # VAT
@@ -925,7 +926,7 @@ class MainUserWindow(QMainWindow):
         footer_layout.addWidget(line, alignment=Qt.AlignmentFlag.AlignRight)
 
         footer_layout.addWidget(row_total)  # TOTAL
-
+        
         self.checkout_button = QPushButton("Check out")
         self.checkout_button.setObjectName("checkoutButton")
         self.checkout_button.setFixedSize(200, 50)
@@ -1414,7 +1415,6 @@ class MainUserWindow(QMainWindow):
     # --- ORDERS PAGE ---
     def create_orders_page(self):
         page_frame = QFrame()
-        page_frame.setObjectName("OrdersPage")
         main_layout = QVBoxLayout(page_frame)
         main_layout.setContentsMargins(250, 40, 50, 40)
         main_layout.setSpacing(20)
@@ -1466,9 +1466,11 @@ class MainUserWindow(QMainWindow):
                 date_layout.setAlignment(Qt.AlignmentFlag.AlignCenter)
                 date_layout.setSpacing(0)
 
-                lbl_title = QLabel(f"Order ID: #{order_id} | Date :")
-                lbl_title.setStyleSheet("font-size: 14px; color: #666; margin-bottom: 5px;")
-                lbl_title.setAlignment(Qt.AlignmentFlag.AlignCenter)
+                lbl_title = QLabel(f"Order ID: #{order_id}")
+                # [MOVED TO CSS] ใช้ ObjectName: orderDateTitle
+                lbl_title.setObjectName("orderDateTitle")
+                lbl_title.setAlignment(Qt.AlignmentFlag.AlignCenter) # ย้ายไป qproperty-alignment ใน CSS ได้ หรือจะคงไว้ที่นี่ก็ได้
+
                 date_layout.addWidget(lbl_title)
 
                 parts = order_date.split(' ')
@@ -1476,13 +1478,16 @@ class MainUserWindow(QMainWindow):
                 time_text = parts[1] if len(parts) > 1 else ""
 
                 lbl_date = QLabel(date_text)
-                lbl_date.setStyleSheet("font-size: 22px; font-weight: bold; color: #000;")
+                # [MOVED TO CSS] ใช้ ObjectName: orderDateLabel
+                lbl_date.setObjectName("orderDateLabel")
                 lbl_date.setAlignment(Qt.AlignmentFlag.AlignCenter)
+
                 date_layout.addWidget(lbl_date)
 
                 if time_text:
                     lbl_time = QLabel(time_text)
-                    lbl_time.setStyleSheet("font-size: 18px; font-weight: bold; color: #555;")
+                    # [MOVED TO CSS] ใช้ ObjectName: orderTimeLabel
+                    lbl_time.setObjectName("orderTimeLabel")
                     lbl_time.setAlignment(Qt.AlignmentFlag.AlignCenter)
                     date_layout.addWidget(lbl_time)
 
@@ -1490,6 +1495,7 @@ class MainUserWindow(QMainWindow):
 
                 status_item = QTableWidgetItem(status)
                 status_item.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
+                # Note: QFont สำหรับ QTableWidgetItem ยังคงไว้ใน Python จะสะดวกกว่าการใช้ CSS
                 status_item.setFont(QFont("Arial", 16))
                 status_item.setData(Qt.ItemDataRole.UserRole, order_id)
                 status_item.setFlags(Qt.ItemFlag.ItemIsEnabled | Qt.ItemFlag.ItemIsSelectable)
@@ -1510,18 +1516,20 @@ class MainUserWindow(QMainWindow):
     def create_order_details_page(self):
         details_frame = QFrame()
         main_layout = QVBoxLayout(details_frame)
-        main_layout.setContentsMargins(250, 10, 20, 40)
-        main_layout.setSpacing(10)
+        main_layout.setContentsMargins(290, 10, 20, 10)
+        main_layout.setSpacing(1)
 
         self.order_details_header = QLabel("Order Details #...")
-        self.order_details_header.setStyleSheet("font-size: 24px; font-weight: bold; margin-bottom: 10px;")
+        # [MOVED TO CSS] ใช้ ObjectName: detailsHeader
+        self.order_details_header.setObjectName("detailsHeader")
         main_layout.addWidget(self.order_details_header)
 
         self.order_items_table = QTableWidget()
-        self.order_items_table.setObjectName("cartTable")
+        self.order_items_table.setObjectName("cartTable") # ใช้ Style เดิมที่มีอยู่แล้ว
         self.order_items_table.setColumnCount(4)
         self.order_items_table.setHorizontalHeaderLabels(["ITEM", "UNIT PRICE", "QUANTITY", "AMOUNT"])
 
+        # ... (ส่วนตั้งค่า Header ตาราง ยังคงเดิม) ...
         header = self.order_items_table.horizontalHeader()
         header.setSectionResizeMode(0, QHeaderView.ResizeMode.Stretch)
         header.setSectionResizeMode(1, QHeaderView.ResizeMode.ResizeToContents)
@@ -1538,7 +1546,7 @@ class MainUserWindow(QMainWindow):
         footer_widget = QWidget()
         footer_layout = QVBoxLayout(footer_widget)
         footer_layout.setAlignment(Qt.AlignmentFlag.AlignRight)
-        footer_layout.setSpacing(10)
+        footer_layout.setSpacing(1)
 
         def create_summary_row(text, is_total=False):
             row_widget = QWidget()
@@ -1547,15 +1555,15 @@ class MainUserWindow(QMainWindow):
             row_layout.setAlignment(Qt.AlignmentFlag.AlignRight)
 
             label_title = QLabel(text)
-            label_title.setObjectName("cartSummaryLabel")
+            label_title.setObjectName("cartSummaryLabel") # ใช้ Style เดิม
             label_title.setAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
 
             label_value = QLabel("0.00 THB")
             if is_total:
-                label_value.setObjectName("cartTotalValue")
+                label_value.setObjectName("cartTotalValue") # ใช้ Style เดิม
                 label_value.setMinimumWidth(200)
             else:
-                label_value.setObjectName("cartSummaryValue")
+                label_value.setObjectName("cartSummaryValue") # ใช้ Style เดิม
                 label_value.setFixedWidth(150)
             label_value.setAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
 
@@ -1576,7 +1584,9 @@ class MainUserWindow(QMainWindow):
         line.setFrameShape(QFrame.Shape.HLine)
         line.setFrameShadow(QFrame.Shadow.Plain)
         line.setFixedWidth(300)
-        line.setStyleSheet("background-color: #000000; max-height: 1px; margin: 10px 0;")
+        # [MOVED TO CSS] ใช้ ObjectName: summarySeparator
+        line.setObjectName("summarySeparator")
+
         footer_layout.addWidget(line)
         footer_layout.addWidget(line, alignment=Qt.AlignmentFlag.AlignRight)
 
@@ -1584,12 +1594,13 @@ class MainUserWindow(QMainWindow):
 
         buttons_container = QHBoxLayout()
         self.ord_back_button = QPushButton("Back")
+        self.ord_back_button.setObjectName("ordBackButton") # เพิ่ม ObjectName เผื่อต้องการ style ในอนาคต
         self.ord_back_button.setFixedSize(150, 50)
         self.ord_back_button.clicked.connect(self.show_orders_page)
 
         self.ord_download_button = QPushButton("Download Receipt")
+        self.ord_download_button.setObjectName("ordDownloadButton") # เพิ่ม ObjectName
         self.ord_download_button.setFixedSize(200, 50)
-        # [MODIFIED] เชื่อม Signal สำหรับดาวน์โหลดใบเสร็จ
         self.ord_download_button.clicked.connect(self.handle_download_receipt)
 
         buttons_container.addWidget(self.ord_back_button)
@@ -2043,35 +2054,56 @@ class MainUserWindow(QMainWindow):
             width, height = A4
 
             # --- HEADER ---
-            LOGO_X, LOGO_Y = 15 * mm, height - 60 * mm
+            # 1. หัวกระดาษ (ORDER ID) - อยู่บนสุด ตรงกลาง
+            c.setFont("Helvetica-Bold", 20)
+            c.drawCentredString(width / 2.0, height - 25 * mm, f"ORDER ID # {order_info['order_id']}")
+
+            # 2. โลโก้ (ซ้าย) และ ที่อยู่ร้านค้า (ขวา)
+            header_start_y = height - 45 * mm # จุดเริ่มของส่วนนี้
+
+            # --- โลโก้ (ย้ายมาซ้าย) ---
+            LOGO_X, LOGO_Y = 20 * mm, header_start_y - 20 * mm # กำหนดตำแหน่งมุมล่างซ้ายของรูป
             LOGO_W, LOGO_H = 50 * mm, 40 * mm
             if os.path.exists(LOGO_PATH):
                 try:
-                    c.drawImage(LOGO_PATH, LOGO_X, LOGO_Y, width=LOGO_W, height=LOGO_H, preserveAspectRatio=True,
-                                mask='auto')
+                    c.drawImage(LOGO_PATH, LOGO_X, LOGO_Y, width=LOGO_W, height=LOGO_H, preserveAspectRatio=True, mask='auto')
                 except:
                     pass
 
+            # --- ที่อยู่ร้านค้า (ย้ายไปขวา) ---
+            text_y = header_start_y
+            right_col_x = width - 20 * mm # จุดอ้างอิงสำหรับชิดขวา
+
             c.setFont(self.main_pdf_font, 14)
-            text_y = height - 55 * mm
-            for line in ["ที่อยู่ร้านค้า :", "หอพักนักศึกษาชายที่ 10 มหาวิทยาลัยขอนแก่น",
+            c.drawRightString(right_col_x, text_y, "ที่อยู่ร้านค้า :") # หัวข้อชิดขวา
+            text_y -= 7 * mm
+
+            c.setFont(self.main_pdf_font, 12)
+            for line in ["หอพักนักศึกษาชายที่ 10 มหาวิทยาลัยขอนแก่น",
                          "ตำบล ศิลา อำเภอเมืองขอนแก่น จังหวัด ขอนแก่น 40000",
                          "เลขประจำตัวผู้เสียภาษี 3101103733"]:
-                c.drawString(20 * mm, text_y, line)
+                c.drawRightString(right_col_x, text_y, line) # เนื้อหาชิดขวา
                 text_y -= 6 * mm
 
-            c.setFont("Helvetica-Bold", 20)
-            c.drawCentredString(width / 2.0, height - 20 * mm, f"ORDER ID # {order_info['order_id']}")
+            # --- เส้นคั่น ---
+            # ให้เส้นคั่นอยู่ใต้ Logo หรือ Text อันที่ยาวกว่า (เผื่อ Logo สูงกว่า Text)
+            line_y = min(text_y, LOGO_Y) - 5 * mm 
+            c.setLineWidth(0.5)
+            c.line(20 * mm, line_y, width - 20 * mm, line_y)
 
-            c.setFont("Helvetica", 7)
-            c.drawString(135 * mm, height - 55 * mm, "CUSTOMER :")
-            c.drawString(135 * mm, height - 65 * mm, "ORDER DATE :")
-
+            # 3. ข้อมูลลูกค้า (อยู่ใต้เส้นคั่น ชิดซ้ายเหมือนเดิม)
+            text_y = line_y - 8 * mm
             c.setFont(self.main_pdf_font, 14)
-            c.drawString(155 * mm, height - 55 * mm, str(order_info['user_id']))
-            c.drawString(155 * mm, height - 65 * mm, str(order_info['order_date']))
+            c.drawString(20 * mm, text_y, "ข้อมูลลูกค้า :")
+            
+            text_y -= 7 * mm
+            c.setFont(self.main_pdf_font, 12)
+            c.drawString(25 * mm, text_y, f"Customer ID : {order_info['user_id']}")
+            text_y -= 6 * mm
+            c.drawString(25 * mm, text_y, f"Order Date : {order_info['order_date']}")
 
             # --- TABLE ---
+            # (ส่วนเตรียมข้อมูลตาราง ... เหมือนเดิม)
             table_data = [['ID', 'ITEM', 'UNIT PRICE', 'QUANTITY', 'AMOUNT']]
             for idx, item in enumerate(items, 1):
                 u_price = item['unit_price']
@@ -2088,7 +2120,7 @@ class MainUserWindow(QMainWindow):
             table = Table(table_data, colWidths=[10 * mm, 70 * mm, 35 * mm, 20 * mm, 35 * mm])
             table.setStyle(TableStyle([
                 ('FONT', (0, 0), (-1, -1), self.main_pdf_font, 12),
-                ('ALIGN', (1, 1), (-1, 0), 'LEFT'),                 # หัวตาราง: ชิดซ้าย
+                ('ALIGN', (1, 1), (-1, 0), 'LEFT'),
                 ('ALIGN', (5, 1), (-1, -1), 'RIGHT'),
                 ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
                 ('LINEABOVE', (0, 0), (-1, 0), 1, colors.black),
@@ -2098,7 +2130,9 @@ class MainUserWindow(QMainWindow):
 
             available_width = width - 40 * mm
             _, table_height = table.wrap(available_width, height)
-            table_top_y = height - 80 * mm
+            
+            # ปรับตำแหน่งเริ่มตารางตาม text_y ล่าสุด
+            table_top_y = text_y - 15 * mm  
             table_y = table_top_y - table_height
             table.drawOn(c, 20 * mm, table_y)
 
@@ -2124,15 +2158,14 @@ class MainUserWindow(QMainWindow):
             c.drawRightString(right_x - 40 * mm, y_footer - 32 * mm, "Total :")
             c.drawRightString(right_x, y_footer - 32 * mm, f"{order_info['total']:,.2f} THB")
 
-            c.setFont("Helvetica-Bold", 24)
-            c.drawCentredString(width / 2.0, 30 * mm, "Thank bro, you are my hero!")
+            c.setFont("Helvetica", 24)
+            c.drawCentredString(width / 2.0, 30 * mm, "Thank you, you are my hero!")
 
             c.save()
 
-            # สั่งเปิดไฟล์ทันที
-            if os.name == 'nt':  # สำหรับ Windows
+            if os.name == 'nt':
                 os.startfile(pdf_filename)
-            else:  # สำหรับ macOS หรือ Linux
+            else:
                 import subprocess
                 opener = 'open' if sys.platform == 'darwin' else 'xdg-open'
                 subprocess.call([opener, pdf_filename])

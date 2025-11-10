@@ -5,6 +5,11 @@ QMainWindow {
 
 
 
+
+
+
+
+
 #Header {
     border-bottom: 1px solid #FFD700;
 }
@@ -31,20 +36,37 @@ QPushButton#navButton:pressed {
 }
 QPushButton#sidebarButton {
     color: white;
-    border: 1px solid #222;
+    border: 1px solid black;
     font-size: 16px;
     padding: 10px;
     border-radius: 5px;
-    background-color: #333333; /* สีดำ/เทาเข้ม */
-    text-align: left;
+    background-color: #406fb0; /* สีดำ/เทาเข้ม */
+    text-align: center;
     padding-left: 20px;
+    font-weight: bold;
 }
 QPushButton#sidebarButton:hover {
-    background-color: #555555;
+    background-color: #233755;
 }
-QPushButton#sidebarButton:pressed {
-    background-color: #111111;
+
+QPushButton#btn_info {
+    background-color: transparent; /* พื้นหลังโปร่งใส */
+    border-radius: 30px;  
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 /* (นี่คือ #MainContent เดิมของคุณ) */
 /* (เปลี่ยนชื่อเป็น #MainContent, #ProfilePage) */
@@ -56,15 +78,15 @@ QPushButton#sidebarButton:pressed {
 /* (ปุ่ม Search เดิม) */
 QPushButton#searchButton {
     color: white;
-    background-color: #333;
-    border: 1px solid #222;
+    background-color: #36537b;
+    border: 1px solid black;
     font-size: 16px;
     padding: 8px;
     border-radius: 5px;
     font-weight: bold;
 }
 QPushButton#searchButton:hover {
-    background-color: #555555;
+    background-color: #233755;
 }
 QScrollArea {
     border: none;
@@ -76,29 +98,56 @@ QScrollArea {
 #browseLabel {
     font-size: 24px;
     font-weight: bold;
-    color: #333;
+    color: #406fb0;
     padding: 10px;
 }
 /* (เพิ่ม) searchBox และ sortCombo (จากโค้ด) */
 #searchBox {
     font-size: 16px;
+    background-color: #36537b;
     padding: 5px 10px;
     border: 1px solid #ccc;
     border-radius: 5px;
 }
 QComboBox#sortCombo {
     font-size: 14px;
+    background-color: #406fb0;
     padding: 5px;
-    border: 1px solid #ccc;
+    border: 1px solid #000000;
     border-radius: 5px;
 }
+
+QComboBox#sortCombo QAbstractItemView {
+    font-size: 14px;
+    background-color: #36537b;
+    padding: 5px;
+    border: 1px solid #000000;
+    border-radius: 5px;
+}
+
 /* (เพิ่ม) placeholder (จากโค้ด) */
 #comicPlaceholder {
     border: 1px solid #ccc; 
-    background-color: #f0f0f0;
+    background-color: #36537b;
     font-size: 14px;
     color: #555;
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 /* === (เพิ่ม) สไตล์สำหรับหน้า Profile === */
 
@@ -138,7 +187,7 @@ QPushButton#profilesidebarButton{
     font-size: 16px;
     padding: 8px;
     border-radius: 5px;
-    background-color: #000000;
+    background-color: #406fb0;
     font-weight: bold;
 }
 
@@ -148,7 +197,7 @@ QPushButton#backsidebarButton{
     font-size: 16px;
     padding: 8px;
     border-radius: 5px;
-    background-color: #333;
+    background-color: #36537b;
     font-weight: bold;
 }
 
@@ -210,6 +259,19 @@ QPushButton#confirmProfileButton:pressed {
     background-color: #1e7e34; /* เข้มสุดเมื่อกด */
 }
 
+
+
+
+
+
+
+
+
+
+
+/* ----------------------------------------------------------
+   2. สไตล์การ์ดรายการสินค้า (comicCard)
+   ---------------------------------------------------------- */
 
 /* สไตล์รายการ Dropdown (ที่เด้งออกมา) */
 QComboBox#profileDataField QAbstractItemView {
@@ -338,6 +400,30 @@ QLabel#detailFormValue {
     font-size: 14px; /* คุณสามารถปรับขนาดได้ตามต้องการ */
 }
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 /* ----------------------------------------------- */
 /* --- สไตล์สำหรับหน้า Product Detail (Quantity) --- */
 /* ----------------------------------------------- */
@@ -395,12 +481,7 @@ QSpinBox#quantitySpinBox {
  */
 QSpinBox#quantitySpinBox::up-button {
     width: 20px; /* ความกว้างของปุ่ม */
-    height: 14px; /* ความสูง (ประมาณครึ่งหนึ่ง) */
-    
-    /* คุณสามารถใช้รูปภาพ (ถ้ามี) */
-    /* border-image: url(src/img/icon/arrow-up.png); */
-
-    /* หรือใช้สไตล์พื้นฐาน */
+    height: 17px; /* ความสูง (ประมาณครึ่งหนึ่ง) */
     border-bottom: 1px solid #c0c0c0; /* เส้นแบ่งตรงกลาง */
     border-left: 1px solid #c0c0c0;   /* เส้นแบ่งด้านซ้าย */
     border-top-right-radius: 4px;     /* ทำให้มุมบนขวาโค้งมน */
@@ -410,13 +491,9 @@ QSpinBox#quantitySpinBox::up-button {
  */
 QSpinBox#quantitySpinBox::down-button {
     width: 20px; /* ความกว้างของปุ่ม */
-    height: 14px; /* ความสูง (ประมาณครึ่งหนึ่ง) */
-
-    /* คุณสามารถใช้รูปภาพ (ถ้ามี) */
-    /* border-image: url(src/img/icon/arrow-down.png); */
-
-    /* หรือใช้สไตล์พื้นฐาน */
-    border-left: 1px solid #c0c0c0;     /* เส้นแบ่งด้านซ้าย */
+    height: 17px; /* ความสูง (ประมาณครึ่งหนึ่ง) */
+    border-left: 1px solid #c0c0c0;
+    border-top: 1px solid #c0c0c0;     /* เส้นแบ่งด้านซ้าย */
     border-bottom-right-radius: 4px;  /* ทำให้มุมล่างขวาโค้งมน */
 }
 
@@ -445,6 +522,443 @@ QSpinBox#quantitySpinBox::up-button:pressed {
 QSpinBox#quantitySpinBox::down-button:pressed {
     background-color: #eeeeee; /* สีเทาอ่อนตอนกด */
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+/*CART*/
+/* --- Cart Table --- */
+#cartTable {
+    background-color: transparent;
+    border: 2px solid #000000; /* เส้นขอบตารางสีเข้ม */
+    font-family: "Mitr", sans-serif; /* หรือฟอนต์ที่คุณใช้ */
+    font-size: 16px;
+    color: #000000;
+}
+
+/* Header ของตาราง */
+#cartTable QHeaderView::section {
+    background-color: #406fb0; /* สีพื้นหลัง Header อ่อนกว่านิดหน่อย */
+    color: #ffffff;
+    padding: 8px;
+    border: 1px solid #000000;
+    font-weight: bold;
+    font-size: 14px;
+    text-transform: uppercase; /* ตัวพิมพ์ใหญ่ทั้งหมด */
+}
+
+/* --- Items in Table --- */
+/* ชื่อสินค้าในตาราง */
+#cartItemName {
+    font-weight: bold;
+    font-size: 16px;
+    color: #333333;
+    padding-left: 10px;
+}
+
+/* QSpinBox สำหรับจำนวน */
+/* QSpinBox ในตารางตะกร้า */
+/* ปรับแต่ง QSpinBox ในหน้าตะกร้า */
+QSpinBox {
+    font-size: 16px;
+    font-weight: bold;
+    color: #000000; /* สีตัวเลขด้านใน */
+    background-color: #FFFFFF; /* พื้นหลังกล่อง */
+    border: 1px solid #CCCCCC; /* สีกรอบ */
+    border-radius: 5px;
+    padding: 5px; /* ระยะห่างภายใน */
+}
+
+/* ปุ่มขึ้น */
+QSpinBox::up-button {
+    width: 20px; /* ความกว้างของปุ่ม */
+    height: 16px; /* ความสูง (ประมาณครึ่งหนึ่ง) */
+    border-bottom: 1px solid #c0c0c0; /* เส้นแบ่งตรงกลาง */
+    border-left: 1px solid #c0c0c0;   /* เส้นแบ่งด้านซ้าย */
+    border-top-right-radius: 4px;     /* ทำให้มุมบนขวาโค้งมน */
+}
+
+QSpinBox::up-arrow {
+    image: url(src/img/icon/up.png); /* (ตัวอย่าง) ต้องมีไฟล์นี้ */
+    width: 10px;
+    height: 10px;
+}
+
+/* ปุ่มลง */
+QSpinBox::down-button {
+    width: 20px; /* ความกว้างของปุ่ม */
+    height: 16px; /* ความสูง (ประมาณครึ่งหนึ่ง) */
+    border-left: 1px solid #c0c0c0;
+    border-top: 1px solid #c0c0c0;     /* เส้นแบ่งด้านซ้าย */
+    border-bottom-right-radius: 4px;  /* ทำให้มุมล่างขวาโค้งมน */
+}
+
+QSpinBox::down-arrow {
+    image: url(src/img/icon/down.png); /* (ตัวอย่าง) ต้องมีไฟล์นี้ */
+    width: 10px;
+    height: 10px;
+}
+
+/* (Optional) Effect ตอนกด */
+QSpinBox::up-button:pressed, QSpinBox::down-button:pressed {
+    background-color: #E0E0E0;
+}
+
+/* ปุ่มลบ (DEL) */
+#cartTable QPushButton {
+    background-color: transparent;
+}
+
+#cartTable QPushButton:hover {
+    background-color: #ff0000; /* พื้นหลังสีชมพูอ่อนเมื่อเอาเมาส์ชี้ */
+    border-radius: 15px; /* ทำให้เป็นวงกลม (ถ้าปุ่มขนาด 30x30) */
+}
+
+/* --- Cart Summary (Footer) --- */
+#cartSummaryLabel {
+    font-size: 18px;
+    color: black;
+    font-weight: normal;
+}
+
+#cartSummaryValue {
+    font-size: 18px;
+    color: black;
+    font-weight: bold;
+}
+
+/* ยอดรวมสุทธิ (Total) */
+#cartTotalValue {
+    font-size: 28px; /* ใหญ่พิเศษ */
+    color: black;
+    font-weight: bold;
+}
+
+/* ปุ่ม Checkout */
+#checkoutButton {
+    background-color: #007BFF; /* สีน้ำเงินหลัก */
+    color: white;
+    font-size: 14pt;
+    font-weight: 700;
+    border-radius: 8px;
+    padding: 10px 20px;
+    min-width: 150px;
+}
+
+#checkoutButton:hover {
+    background-color: #0056b3; /* สีเหลืองเมื่อเอาเมาส์ชี้ (เข้าธีมร้าน) */
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+/* --- Checkout Page Styles --- */
+
+/* กรอบ QR Code */
+#qrCodeLabel {
+    border: 2px solid #e0e0e0;
+    border-radius: 10px;
+    background-color: #ffffff;
+    padding: 10px;
+}
+
+/* หัวข้อ QR Code */
+#qrTitleLabel {
+    font-size: 18px;
+    color: #000000;
+    font-family: "Arial Black", sans-serif; /* หรือฟอนต์ที่คุณใช้ */
+}
+
+#uploadlabel{
+    font-size:22px;
+    font-weight: bold;
+    color:black;
+}
+
+/* ช่อง Upload Path */
+QLineEdit[readOnly="true"] {
+    background-color: #f9f9f9;
+    color: #555555;
+    border: 1px solid #cccccc;
+}
+
+#slipPathField {
+    background-color: #f8f9fa;
+    color: #495057;
+    border: 2px solid #ced4da;
+    border-color: #3498db;
+    border-radius: 5px; /* ทำเป็นแคปซูล */
+    padding-left: 15px;
+    padding-right: 15px;
+    font-size: 14px;
+}
+
+#uploadSlipButton {
+    background-color: #e9ecef;
+    border: 2px solid;
+    border-color: #3498db;
+    border-radius: 5px; /* ปุ่มกลม */
+}
+#uploadSlipButton:hover {
+    background-color: #2980b9;
+}
+
+
+/* 3. Instructions Section */
+#instructionLabel {
+    background-color: #e8f4fd; /* สีพื้นหลังฟ้าอ่อน */
+    border-left: 6px solid #3498db; /* แถบสีด้านซ้าย */
+    padding: 20px;
+    border-radius: 8px;
+    color: #2c3e50;
+    font-size: 15px;
+    line-height: 1.6; /* เพิ่มระยะห่างระหว่างบรรทัด */
+}
+
+/* 4. Summary Section (ปรับปรุงใหม่ตามที่ตั้งชื่อ objectName ไว้) */
+
+/* เส้นคั่น */
+QFrame[frameShape="4"] { /* 4 คือ HLine */
+    color: #292c2c;
+}
+
+/* Title ทั่วไป (Subtotal, Shipping, Vat) */
+#checkoutSubtotalTitle, #checkoutShippingTitle, #checkoutVatTitle {
+    font-size: 15px;
+    color: #292c2c;
+    font-weight: normal;
+}
+
+/* Value ทั่วไป (Subtotal, Shipping, Vat) */
+#checkoutSubtotalValue, #checkoutShippingValue, #checkoutVatValue {
+    font-size: 16px;
+    color: #000000;
+    font-weight: 600; /* Semi-bold */
+}
+
+/* Total Amount (ต้องเด่นที่สุด) */
+#checkoutTotalTitle {
+    font-size: 20px;
+    color: #292c2c;
+    margin-top: 10px; /* เพิ่มระยะห่างจากเส้นคั่น */
+}
+
+#checkoutTotalValue {
+    font-size: 28px; /* ใหญ่พิเศษ */
+    font-weight: 900; /* Extra-bold */
+    color: #000000; /* สีแดงเด่น */
+    font-family: "Segoe UI Black", "Arial Black", sans-serif;
+    margin-top: 10px;
+}
+
+/* 5. Bottom Buttons */
+#checkoutBackButton {
+    background-color: #007BFF; /* สีน้ำเงินหลัก */
+    color: white;
+    font-size: 14pt;
+    font-weight: 700;
+    border-radius: 8px;
+    padding: 10px 20px;
+    min-width: 150px;
+}
+#checkoutBackButton:hover {
+    background-color: #0056b3;
+}
+
+#confirmPaymentButton {
+    background-color: #2ecc71; /* สีเขียว */
+    color: white;
+    font-size: 14pt;
+    font-weight: 700;
+    border-radius: 8px;
+    padding: 10px 20px;
+    min-width: 150px;
+}
+#confirmPaymentButton:hover {
+    background-color: #27ae60; /* เขียวเข้มขึ้นเมื่อชี้ */
+}
+#confirmPaymentButton:pressed {
+    background-color: #219a52;
+}
+#confirmPaymentButton:disabled {
+    background-color: #bdc3c7; /* สีเทาเมื่อยังไม่พร้อมใช้งาน */
+    color: #ecf0f1;
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+/* พวกหน้า your orders*/
+
+#ordersTable {
+    background-color: #233755;
+    border: 2px solid #000000; /* เส้นขอบตารางสีเข้ม */
+    font-family: "Mitr", sans-serif; /* หรือฟอนต์ที่คุณใช้ */
+    font-size: 16px;
+    color: white;
+}
+
+#ordersTable QHeaderView::section {
+    background-color: #406fb0; /* สีพื้นหลัง Header อ่อนกว่านิดหน่อย */
+    color: #ffffff;
+    padding: 8px;
+    border: 1px solid #000000;
+    font-weight: bold;
+    font-size: 14px;
+    text-transform: uppercase; /* ตัวพิมพ์ใหญ่ทั้งหมด */
+}
+
+/* --- Orders History Table (หน้าประวัติการสั่งซื้อ) --- */
+QLabel#orderDateTitle {
+    font-size: 14px;
+    color: #ffffff;
+    margin-bottom: 5px;
+}
+
+QLabel#orderDateLabel {
+    font-size: 22px;
+    font-weight: bold;
+    color: #ffffff;
+}
+
+QLabel#orderTimeLabel {
+    font-size: 18px;
+    font-weight: bold;
+    color: #ffffff;
+}
+
+/* --- Order Details Page (หน้ารายละเอียดคำสั่งซื้อ) --- */
+QLabel#detailsHeader {
+    font-size: 22px;
+    font-weight: bold;
+    margin-bottom: 10px;
+    color: #406fb0;
+}
+
+/* เส้นคั่นในส่วนสรุปยอดเงิน */
+QFrame#summarySeparator {
+    background-color: #000000;
+    max-height: 1px;
+    margin: 10px 0px;
+    border: none;
+}
+
+/* ปุ่ม Back และ Download */
+QPushButton#ordBackButton{
+    background-color: #007BFF; /* สีน้ำเงินหลัก */
+    color: white;
+    font-size: 14pt;
+    font-weight: 700;
+    border-radius: 8px;
+    padding: 10px 20px;
+    min-width: 150px;
+}
+QPushButton#ordBackButton:hover {
+    background-color: #0056b3;
+}
+
+QPushButton#ordDownloadButton{
+    background-color: #007BFF; /* สีน้ำเงินหลัก */
+    color: white;
+    font-size: 14pt;
+    font-weight: 700;
+    border-radius: 8px;
+    padding: 10px 20px;
+    min-width: 150px;
+}
+
+QPushButton#ordDownloadButton:hover{
+    background-color: #0056b3;
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+/* sidebar พวกdef cart */
+
+QPushButton#sidebarButtonActive{
+    color: white;
+    border: 1px solid black;
+    font-size: 16px;
+    padding: 10px;
+    border-radius: 5px;
+    background-color: #406fb0; /* สีดำ/เทาเข้ม */
+    padding-left: 20px;
+    font-weight: bold;
+}
+
+QPushButton#sidebarButtonActive:hover{
+    background-color: #233755;
+}
+
+
+
+
+
+
+
+
+
+
 
 
 /* ---------------------------------

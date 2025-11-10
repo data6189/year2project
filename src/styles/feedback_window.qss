@@ -1,0 +1,85 @@
+QMainWindow {
+    border-image: url("src/img/admin/fdbg.png") 0 0 0 0 stretch stretch;
+}
+
+/* === Main Window & Overlay Base === */
+#InfoWindow, #FeedbackOverlay {
+    background-color: transparent;
+}
+
+/* === Table Widget (หน้าแรก) === */
+#feedback_table {
+    background-color: #1e304a;
+    font-size: 16px;
+}
+
+#feedback_table::item {
+    padding: 5px;
+}
+
+#feedback_table::item:selected {
+    background-color: #a8d8ff; /* สีไฮไลท์เวลาเลือกแถว */
+    color: black;
+}
+
+QHeaderView::section {
+    background-color: #406fb0;
+    padding: 8px;
+    border: 1px solid #ccc;
+    font-weight: bold;
+    font-size: 16px;
+}
+
+/* === Detail View (หน้ารายละเอียด) === */
+/* ป้ายหัวข้อ (Users, Message, Date, Note) */
+QLabel[header="true"] {
+    background-color: #406fb0;
+    border: 1px solid #ffffff;
+    font-weight: bold;
+    font-size: 18px;
+    padding: 5px;
+}
+
+/* ช่องแสดงข้อมูล (Users, Date) */
+QLabel[data_cell="true"] {
+    background-color: #1e304a;
+    border: 1px solid #ffffff;
+    border-top: none; /* ให้เส้นเนียนไปกับหัวข้อ */
+    font-size: 16px;
+    padding: 10px;
+}
+
+/* ช่องแสดงข้อความ Message (QTextEdit แบบ Read-only) */
+QTextEdit[data_cell="true"] {
+    background-color: #1e304a;
+    border: 2px solid #333;
+    border-top: none;
+    border-left: none;
+    border-right: none;
+    font-size: 16px;
+    padding: 10px;
+}
+
+/* ช่องกรอก Note */
+QTextEdit#note_edit {
+    background-color: #1e304a;
+    border: 2px solid #333;
+    border-top: none;
+    font-size: 16px;
+    padding: 10px;
+}
+
+/* === Buttons (ปุ่ม BACK) === */
+QPushButton {
+    background-color: #007BFF; /* สีน้ำเงินหลัก */
+    color: white;
+    font-size: 16px;
+    padding: 12px;
+    border-radius: 5px;
+    font-weight: 700px;
+    min-width: 150px;
+}
+
+QPushButton:hover {
+    background-color: #0056b3;
+}

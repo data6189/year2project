@@ -1,22 +1,15 @@
 import sys
 import os
 import sqlite3
-import datetime
+import datetime # (!!! ใหม่ !!!) เพิ่ม import นี้
 from PyQt6.QtWidgets import *
 from PyQt6.QtGui import *
 from PyQt6.QtCore import *
 
+# (สำคัญ) ตรวจสอบให้แน่ใจว่าเส้นทางไปยังฐานข้อมูลถูกต้อง
 DB_PATH = "src/database/thisshop.db" 
 
-# --- IMPORT สำหรับ Info Window ---
-InfoWindow = None  # กำหนดค่าเริ่มต้นเป็น None ป้องกัน NameError
-try:
-    from feedback_window import feedbackWindow
-except ImportError:
-    print("Warning: ไม่สามารถ import feedbackWindow ได้ กรุณาตรวจสอบว่าไฟล์ feedback_window.py อยู่ในโฟลเดอร์เดียวกัน")
-# --------------------------------
-
-
+# (!!! แก้ไข !!!) เปลี่ยนชื่อคลาสเป็น MainAdminWindow
 class MainAdminWindow(QMainWindow):
     logout_requested = pyqtSignal()
     
@@ -24,19 +17,21 @@ class MainAdminWindow(QMainWindow):
         super().__init__(parent)
         self.current_username = username 
         
-        self.new_profile_img_path = None
-        self.current_profile_img_path = None
-        self.editable_profile_fields = []
+        self.new_profile_img_path = None # เส้นทางรูปโปรไฟล์ใหม่ที่เลือก
+        self.current_profile_img_path = None # เส้นทางรูปโปรไฟล์ปัจจุบันจาก DB
+        self.editable_profile_fields = [] # รายการช่องที่แก้ไขได้
 
         self.is_in_edit_mode = False
 
+        # สถานะสำหรับการกรองและเรียงลำดับ
         self.current_category = "ALL"
         self.current_search_term = ""
-        self.current_sort_order = "Newest"
+        self.current_sort_order = "Newest" # ค่าเริ่มต้นที่แสดงใน QComboBox
         
         self.current_detail_product_id = None 
         self.current_detail_stock = 0
         
+        # (!!! ใหม่ !!!) ตัวแปรสำหรับเก็บที่อยู่รูป comic ที่จะเพิ่ม
         self.new_comic_img_path = None
 
         self.setWindowTitle(f"Beyond Comics - Admin : {self.current_username}") 
@@ -51,7 +46,6 @@ class MainAdminWindow(QMainWindow):
 
         self.header_frame = self.create_header()
         self.main_layout.addWidget(self.header_frame)
-        self.create_feedback_button()
 
         self.body_widget = QWidget()
         self.body_layout = QHBoxLayout(self.body_widget)
@@ -64,12 +58,12 @@ class MainAdminWindow(QMainWindow):
         self.browse_sidebar = self.create_browse_sidebar()
         self.profile_sidebar = self.create_profile_sidebar()
         self.detail_sidebar = self.create_detail_sidebar() 
-        self.add_comic_sidebar = self.create_add_comic_sidebar()
+        self.add_comic_sidebar = self.create_add_comic_sidebar() # (!!! ใหม่ !!!)
         
         self.sidebar_stack.addWidget(self.browse_sidebar)     # Index 0
         self.sidebar_stack.addWidget(self.profile_sidebar)    # Index 1
         self.sidebar_stack.addWidget(self.detail_sidebar)     # Index 2
-        self.sidebar_stack.addWidget(self.add_comic_sidebar)  # Index 3
+        self.sidebar_stack.addWidget(self.add_comic_sidebar)  # Index 3 (!!! ใหม่ !!!)
         
         self.body_layout.addWidget(self.sidebar_stack) 
 
@@ -77,12 +71,12 @@ class MainAdminWindow(QMainWindow):
         self.browse_page = self.create_browse_page()
         self.profile_page = self.create_profile_page()
         self.product_detail_page = self.create_product_detail_page() 
-        self.add_comic_page = self.create_add_comic_page()
+        self.add_comic_page = self.create_add_comic_page() # (!!! ใหม่ !!!)
 
         self.main_content_stack.addWidget(self.browse_page)         # Index 0
         self.main_content_stack.addWidget(self.profile_page)        # Index 1
         self.main_content_stack.addWidget(self.product_detail_page) # Index 2
-        self.main_content_stack.addWidget(self.add_comic_page)      # Index 3
+        self.main_content_stack.addWidget(self.add_comic_page)      # Index 3 (!!! ใหม่ !!!)
         
         self.body_layout.addWidget(self.main_content_stack, 1)
 
@@ -93,6 +87,7 @@ class MainAdminWindow(QMainWindow):
         
         self.set_profile_fields_read_only(True)
 
+
     def load_stylesheet(self, filepath):
         try:
             with open(filepath, 'r', encoding='utf-8') as f:
@@ -102,108 +97,70 @@ class MainAdminWindow(QMainWindow):
         except Exception as e:
             print(f"เกิดข้อผิดพลาดในการโหลด stylesheet: {e}")
 
-    # (!!! แก้ไข Header: ปรับเป็น 2x3 !!!)
+    # (!!! แก้ไข !!!)
+    # ลบปุ่ม "CART" และเพิ่มปุ่ม "ADD COMIC"
     def create_header(self):
         header_frame = QFrame()
         header_frame.setObjectName("Header")
-        header_frame.setFixedHeight(185) # ปรับความสูงกลับมาปกติเพราะเหลือแค่ 2 แถว
-        
+        header_frame.setFixedHeight(185)
         header_layout = QHBoxLayout(header_frame)
-        header_layout.setContentsMargins(50, 10, 200, 10)
-        header_layout.addStretch() 
+        header_layout.setContentsMargins(50, 10, 50, 10)
+        header_layout.setSpacing(120)
+        header_layout.addStretch()
 
-        right_buttons_widget = QWidget()
-        # (ใช้ GridLayout 2x3)
-        right_grid = QGridLayout(right_buttons_widget)
-        right_grid.setSpacing(15) 
-        right_grid.setContentsMargins(0, 20, 0, 20)
-
-        button_height = 55 
-        button_width = 180 
+        button_height = 60
+        button_width = 190
         
-        # --- แถวที่ 0 ---
-        # (คอลัมน์ 0: Manage Account)
-        self.btn_manage_account = QPushButton("Manage Account")
-        self.btn_manage_account.setObjectName("navButton")
-        self.btn_manage_account.setFixedSize(button_width, button_height)
-        right_grid.addWidget(self.btn_manage_account, 0, 0)
+        # --- (!!! ส่วนของปุ่ม CART ถูกลบออก !!!) ---
+        
+        # (!!! ใหม่ !!!) ปุ่ม ADD COMIC
+        try:
+            add_comic_icon = QIcon("src/img/icon/add.png") 
+        except:
+            add_comic_icon = QIcon() 
+            
+        add_comic_button = QPushButton(" ADD COMIC")
+        add_comic_button.setIcon(add_comic_icon)
+        add_comic_button.setIconSize(QSize(50, 50)) 
+        add_comic_button.setObjectName("navButton")
+        add_comic_button.setFixedSize(button_width, button_height)
+        
+        # (!!! แก้ไข !!!) เปลี่ยนจาก placeholder_add_comic
+        add_comic_button.clicked.connect(self.show_add_comic_page) 
+        
+        header_layout.addWidget(add_comic_button) 
 
-        # (คอลัมน์ 1: Sales Summary)
-        self.btn_sales_summary = QPushButton("Sales Summary")
-        self.btn_sales_summary.setObjectName("navButton")
-        self.btn_sales_summary.setFixedSize(button_width, button_height)
-        right_grid.addWidget(self.btn_sales_summary, 0, 1)
-
-
-        # (คอลัมน์ 2: PROFILE)
         profile_icon = QIcon("src/img/icon/profile.png") 
-        self.btn_profile = QPushButton(" PROFILE")
-        self.btn_profile.setIcon(profile_icon)
-        self.btn_profile.setIconSize(QSize(50, 50))
-        self.btn_profile.setObjectName("navButton")
-        self.btn_profile.setFixedSize(button_width, button_height)
-        self.btn_profile.clicked.connect(self.show_profile_page)
-        right_grid.addWidget(self.btn_profile, 0, 2)
+        profile_button = QPushButton(" PROFILE")
+        profile_button.setIcon(profile_icon)
+        profile_button.setIconSize(QSize(50, 50))
+        profile_button.setObjectName("navButton")
+        profile_button.setFixedSize(button_width, button_height)
+        profile_button.clicked.connect(self.show_profile_page)
+        header_layout.addWidget(profile_button)
 
-        # --- แถวที่ 1 ---
-        # (คอลัมน์ 0: Manage Comics)
-        self.btn_manage_comics = QPushButton("Manage Comics")
-        self.btn_manage_comics.setObjectName("navButton")
-        self.btn_manage_comics.setFixedSize(button_width, button_height)
-        self.btn_manage_comics.clicked.connect(self.show_add_comic_page)
-        right_grid.addWidget(self.btn_manage_comics, 1, 0)
-        
-
-        # (คอลัมน์ 1: Orders)
-        self.btn_orders = QPushButton("Orders")
-        self.btn_orders.setObjectName("navButton")
-        self.btn_orders.setFixedSize(button_width, button_height)
-        right_grid.addWidget(self.btn_orders, 1, 1)
-        
-        # (คอลัมน์ 2: LOGOUT)
-        self.btn_logout = QPushButton("LOGOUT")
-        self.btn_logout.setObjectName("navButton")
-        self.btn_logout.setFixedSize(button_width, button_height)
-        self.btn_logout.clicked.connect(self.handle_logout)
-        right_grid.addWidget(self.btn_logout, 1, 2)
-
-        header_layout.addWidget(right_buttons_widget)
+        logout_button = QPushButton("LOGOUT")
+        logout_button.setObjectName("navButton")
+        logout_button.setFixedSize(button_width, button_height)
+        logout_button.clicked.connect(self.handle_logout)
+        header_layout.addWidget(logout_button)
 
         return header_frame
 
-    def create_feedback_button(self):
-        self.btn_feedback = QPushButton(self.central_widget)
-        self.btn_feedback.setObjectName("btn_info")
-        self.btn_feedback.setCursor(Qt.CursorShape.PointingHandCursor)
-        # กำหนดขนาดและตำแหน่ง (ปรับ x, y ตามต้องการเพื่อให้ตรงกับดีไซน์)
-        self.btn_feedback.setGeometry(368, 75, 60, 60) 
-        self.btn_feedback.raise_() # ดึงปุ่มขึ้นมาไว้บนสุด
-        self.btn_feedback.clicked.connect(self.open_feedback_window)
-        
-    def open_feedback_window(self):
-        # ตรวจสอบว่าคลาส InfoWindow ถูก import มาสำเร็จหรือไม่
-        if feedbackWindow is None:
-             QMessageBox.warning(self, "Error", "ไม่พบไฟล์ feedback_window.py")
-             return
-
-        # ส่ง self (ตัวหน้าต่าง MainUserWindow นี้) ไปด้วย เพื่อให้ InfoWindow เรียกกลับมาได้
-        self.feedback_window_instance = feedbackWindow(user_id=self.current_username, parent_window=self)
-        self.feedback_window_instance.show()
-        self.hide() # ซ่อนหน้าต่าง Main นี้ไว้ก่อ
-
     def create_browse_sidebar(self):
         sidebar_frame = QFrame()
-        sidebar_frame.setObjectName("Sidebar")
+        sidebar_frame.setObjectName("Sidebar") 
         sidebar_layout = QVBoxLayout(sidebar_frame)
         sidebar_layout.setContentsMargins(20, 30, 20, 20)
         sidebar_layout.setSpacing(25)
         sidebar_layout.setAlignment(Qt.AlignmentFlag.AlignTop)
 
         button_height = 55
+
         btn_marvel = QPushButton("MARVEL")
         btn_marvel.setObjectName("sidebarButton")
         btn_marvel.setFixedHeight(button_height)
-        btn_marvel.clicked.connect(lambda: self.filter_products_by_category("MARVEL"))
+        btn_marvel.clicked.connect(lambda: self.filter_products_by_category("MARVEL")) 
         sidebar_layout.addWidget(btn_marvel)
 
         btn_dc = QPushButton("DC")
@@ -217,16 +174,27 @@ class MainAdminWindow(QMainWindow):
         btn_image.setFixedHeight(button_height)
         btn_image.clicked.connect(lambda: self.filter_products_by_category("Image Comics"))
         sidebar_layout.addWidget(btn_image)
-
         sidebar_layout.addStretch()
-
+        
+        btn_orders = QPushButton("Orders")
+        btn_orders.setObjectName("sidebarButton")
+        btn_orders.setFixedHeight(button_height)
+        sidebar_layout.addWidget(btn_orders)
+        sidebar_layout.addStretch()
+        
+        btn_summary = QPushButton("Sales Summary")
+        btn_summary.setObjectName("sidebarButton")
+        btn_summary.setFixedHeight(button_height)
+        sidebar_layout.addWidget(btn_summary)
+        sidebar_layout.addStretch()
+        
         btn_all = QPushButton("ALL")
         btn_all.setObjectName("sidebarButton")
         btn_all.setFixedHeight(button_height)
         btn_all.clicked.connect(lambda: self.filter_products_by_category("ALL"))
         sidebar_layout.addWidget(btn_all)
         sidebar_layout.addStretch()
-
+        
         return sidebar_frame
 
     def create_profile_sidebar(self):
@@ -273,6 +241,8 @@ class MainAdminWindow(QMainWindow):
         sidebar_layout.addStretch()
         return sidebar_frame
 
+    # (!!! ใหม่ !!!)
+    # สร้าง Sidebar สำหรับหน้า Add Comic
     def create_add_comic_sidebar(self):
         sidebar_frame = QFrame()
         sidebar_frame.setObjectName("Sidebar") 
@@ -283,12 +253,14 @@ class MainAdminWindow(QMainWindow):
 
         button_height = 55
 
-        btn_manage = QPushButton("Manage Comics")
-        btn_manage.setObjectName("profilesidebarButton")
-        btn_manage.setFixedHeight(button_height)
-        btn_manage.setEnabled(False) 
-        sidebar_layout.addWidget(btn_manage)
+        # (ปุ่ม Add comic นี้จะกดไม่ได้ มีไว้โชว์เฉยๆ)
+        btn_add_comic = QPushButton("Add comic")
+        btn_add_comic.setObjectName("profilesidebarButton") # (ใช้ style เดียวกับปุ่ม profile)
+        btn_add_comic.setFixedHeight(button_height)
+        btn_add_comic.setEnabled(False) 
+        sidebar_layout.addWidget(btn_add_comic)
 
+        # (ปุ่ม Back เพื่อกลับไปหน้า Browse)
         btn_back = QPushButton("Back")
         btn_back.setObjectName("backsidebarButton")
         btn_back.setFixedHeight(button_height)
@@ -298,6 +270,8 @@ class MainAdminWindow(QMainWindow):
         sidebar_layout.addStretch()
         return sidebar_frame
 
+    # (!!! ใหม่ !!!)
+    # สร้างหน้า UI สำหรับ Add Comic
     def create_add_comic_page(self):
         add_comic_frame = QFrame()
         add_comic_frame.setObjectName("AddComicPage") 
@@ -334,19 +308,23 @@ class MainAdminWindow(QMainWindow):
         left_layout.addWidget(self.add_comic_upload_button)
         main_layout.addWidget(left_container, 0)
 
-        # --- ส่วนขวา: ฟอร์มข้อมูล ---
+        # --- ส่วนขวา: ฟอร์มข้อมูล (ปรับ Layout) ---
+        
+        # (1. สร้าง Container หลักด้านขวา ให้ใช้ QVBoxLayout)
         right_container = QWidget()
-        right_layout = QVBoxLayout(right_container)
+        right_layout = QVBoxLayout(right_container) # (Layout แนวตั้ง)
         right_layout.setSpacing(15)
         right_layout.setContentsMargins(0, 0, 0, 0)
         right_layout.setAlignment(Qt.AlignmentFlag.AlignTop)
 
+        # (2. สร้าง Frame สำหรับ QFormLayout โดยเฉพาะ)
         right_form_frame = QFrame()
         right_form_frame.setObjectName("addComicFormFrame")
-        form_layout = QFormLayout(right_form_frame)
+        form_layout = QFormLayout(right_form_frame) # (เอา Form ใส่ใน Frame นี้)
         form_layout.setSpacing(15)
         form_layout.setLabelAlignment(Qt.AlignmentFlag.AlignLeft)
 
+        # (สร้าง Widgets สำหรับฟอร์ม - เหมือนเดิม)
         self.add_comic_name = QLineEdit()
         self.add_comic_volume = QLineEdit()
         self.add_comic_desc = QTextEdit()
@@ -377,6 +355,7 @@ class MainAdminWindow(QMainWindow):
         self.add_comic_stock.setPlaceholderText("Enter stock quantity")
         self.add_comic_price.setPlaceholderText("Enter price (e.g., 150.00)")
         
+        # (เพิ่มแถวใน Form - เหมือนเดิม)
         form_layout.addRow(QLabel("Name :"), self.add_comic_name)
         form_layout.addRow(QLabel("Volume/Issue :"), self.add_comic_volume)
         form_layout.addRow(QLabel("Description :"), self.add_comic_desc)
@@ -387,19 +366,31 @@ class MainAdminWindow(QMainWindow):
         form_layout.addRow(QLabel("Stock :"), self.add_comic_stock)
         form_layout.addRow(QLabel("Price :"), self.add_comic_price)
         
+        # (3. เพิ่ม Frame ที่มี Form ลงใน right_layout)
         right_layout.addWidget(right_form_frame)
 
+        # (4. สร้างปุ่ม Add Product)
         self.add_product_button = QPushButton("Add Product")
         self.add_product_button.setObjectName("addProductButton")
         self.add_product_button.setFixedHeight(50)
         self.add_product_button.clicked.connect(self.save_new_comic)
+        
+        # (กำหนดความกว้างคงที่ให้ปุ่ม)
         self.add_product_button.setFixedWidth(200) 
         
+        # (5. เพิ่มปุ่ม Add Product เข้าไปใน right_layout)
+        
+        # (!!! นี่คือการแก้ไขที่สำคัญ: เปลี่ยนจาก AlignLeft เป็น AlignRight !!!)
         right_layout.addWidget(self.add_product_button, 0, Qt.AlignmentFlag.AlignRight)
+
+        # (6. เพิ่ม Stretch เพื่อดันทุกอย่างขึ้นบน)
         right_layout.addStretch(1)
+
+        # (7. เพิ่ม right_container (ที่มี VBox) เข้าไปใน main_layout)
         main_layout.addWidget(right_container, 1)
 
         return add_comic_frame
+
 
     def create_browse_page(self):
         main_content_frame = QFrame()
@@ -576,6 +567,7 @@ class MainAdminWindow(QMainWindow):
                     if cover_img_path and os.path.exists(cover_img_path):
                         pixmap = QPixmap(cover_img_path)
                     else:
+                        print(f"คำเตือน: ไม่พบรูป comic '{cover_img_path}' สำหรับ '{name}'. ใช้ placeholder")
                         pixmap = QPixmap("src/img/icon/profile.png") 
                         if pixmap.isNull():
                             pixmap = QPixmap(card_width - 10, image_height)
@@ -623,6 +615,13 @@ class MainAdminWindow(QMainWindow):
         except sqlite3.OperationalError as e:
             print(f"เกิดข้อผิดพลาด SQL: {e}")
             error_text = f"Error executing query: {e}\n"
+            if "no such column: id" in str(e):
+                error_text += "Please ensure the 'product' table has an 'id' column."
+            elif "no such column: created_at" in str(e):
+                error_text += "Please ensure the 'product' table has a 'created_at' column."
+            elif "no such column: category" in str(e):
+                error_text += "Please ensure the 'product' table has a 'category' column."
+            
             error_label = QLabel(error_text)
             error_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
             self.grid_layout.addWidget(error_label, 0, 0)
@@ -633,6 +632,9 @@ class MainAdminWindow(QMainWindow):
             error_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
             self.grid_layout.addWidget(error_label, 0, 0)
 
+    
+    # (!!! แก้ไข !!!)
+    # ลบส่วน "QUANTITY" และปุ่ม "Add to Cart"
     def create_product_detail_page(self):
         detail_frame = QFrame()
         detail_frame.setObjectName("ProductDetailPage")
@@ -714,12 +716,16 @@ class MainAdminWindow(QMainWindow):
         self.detail_price_label.setAlignment(Qt.AlignmentFlag.AlignRight) 
         right_info_layout.addWidget(self.detail_price_label)
         
+        # --- (!!! ส่วนของปุ่ม CART, QSpinBox, Label QUANTITY ถูกลบออก !!!) ---
+        
         right_info_layout.addStretch() 
         
         main_detail_layout.addWidget(right_info_widget, 0, Qt.AlignmentFlag.AlignRight) 
 
         return detail_frame
 
+    # (!!! แก้ไข !!!)
+    # ลบ Logic ที่ควบคุมปุ่ม Cart และ Spinbox
     def load_product_details(self, product_id):
         self.detail_name_label.setText("Loading...")
         self.detail_desc_label.setText("Loading details...")
@@ -732,6 +738,8 @@ class MainAdminWindow(QMainWindow):
         
         self.current_detail_product_id = None
         self.current_detail_stock = 0
+        
+        # --- (!!! ลบส่วนที่ควบคุม UI ของ Cart !!!) ---
         
         placeholder_pixmap = QPixmap(self.detail_cover_label.size())
         placeholder_pixmap.fill(Qt.GlobalColor.white)
@@ -771,6 +779,8 @@ class MainAdminWindow(QMainWindow):
                 self.current_detail_product_id = id
                 self.current_detail_stock = stock_available
 
+                # --- (!!! ลบ Logic การควบคุมปุ่ม Cart/Spinbox ตาม Stock !!!) ---
+
                 pixmap = None
                 if cover_img and os.path.exists(cover_img):
                     pixmap = QPixmap(cover_img)
@@ -796,6 +806,8 @@ class MainAdminWindow(QMainWindow):
                 pixmap.fill(Qt.GlobalColor.white) 
                 self.detail_cover_label.setPixmap(pixmap)
                 print(f"ไม่พบสินค้าที่มี ID: {product_id}")
+                
+                # --- (!!! ลบส่วนที่ควบคุม UI ของ Cart !!!) ---
 
         except Exception as e:
             print(f"เกิดข้อผิดพลาดในการโหลดรายละเอียดสินค้า (ID: {product_id}): {e}")
@@ -804,12 +816,18 @@ class MainAdminWindow(QMainWindow):
             pixmap = QPixmap(self.detail_cover_label.size())
             pixmap.fill(Qt.GlobalColor.lightGray) 
             self.detail_cover_label.setPixmap(pixmap)
+            
+            # --- (!!! ลบส่วนที่ควบคุม UI ของ Cart !!!) ---
 
     def show_product_detail_page(self, product_id):
         print(f"กำลังแสดงรายละเอียดสำหรับ ID: {product_id}")
+        
         self.load_product_details(product_id)
+        
         self.sidebar_stack.setCurrentIndex(2)
         self.main_content_stack.setCurrentIndex(2)
+        
+    # --- (!!! ลบฟังก์ชัน handle_add_to_cart ทั้งหมด !!!) ---
 
     def create_profile_page(self):
         profile_frame = QFrame()
@@ -840,7 +858,7 @@ class MainAdminWindow(QMainWindow):
             self.upload_button.setIcon(upload_icon)
             self.upload_button.setIconSize(QSize(40, 40))
         except:
-             print("คำเตือน: ไม่พบไอคอนอัปโหลด 'src/img/icon/upload.png'")
+                print("คำเตือน: ไม่พบไอคอนอัปโหลด 'src/img/icon/upload.png'")
             
         self.upload_button.setObjectName("uploadButton") 
         self.upload_button.setFixedHeight(40)
@@ -940,6 +958,7 @@ class MainAdminWindow(QMainWindow):
                 print(f"คำเตือน: ไม่พบไฟล์รูปภาพที่ '{image_path}', ใช้รูปโปรไฟล์เริ่มต้น")
                 source_pixmap = QPixmap("src/img/icon/profile.png")
                 if source_pixmap.isNull():
+                    print("คำเตือน: ไม่พบรูปโปรไฟล์เริ่มต้น 'src/img/icon/profile.png'")
                     source_pixmap = QPixmap(size, size)
                     source_pixmap.fill(Qt.GlobalColor.gray)
 
@@ -948,9 +967,12 @@ class MainAdminWindow(QMainWindow):
             source_pixmap = QPixmap(size, size)
             source_pixmap.fill(Qt.GlobalColor.gray)
         
+        # (แก้ไข) เปลี่ยนเป็น KeepAspectRatio เพื่อไม่ให้รูปบิดเบี้ยว
+        # (หมายเหตุ: create_scaled_pixmap นี้ใช้สำหรับ profile ที่เป็นสี่เหลี่ยมจัตุรัส)
+        # (เราจะใช้ logic ที่ต่างกันเล็กน้อยสำหรับปก comic)
         scaled_pixmap = source_pixmap.scaled(
             size, size, 
-            Qt.AspectRatioMode.IgnoreAspectRatio,
+            Qt.AspectRatioMode.IgnoreAspectRatio, # (อันนี้สำหรับ profile ถูกแล้ว)
             Qt.TransformationMode.SmoothTransformation
         )
         return scaled_pixmap
@@ -958,35 +980,43 @@ class MainAdminWindow(QMainWindow):
     def load_user_profile(self):
         try:
             target_size = 250
+            
             if not os.path.exists(DB_PATH):
                 print(f"ข้อผิดพลาด: ไม่พบไฟล์ DB ขณะโหลดโปรไฟล์: {DB_PATH}")
                 self.profile_username_field.setText(self.current_username)
                 self.profile_fname_field.setText("N/A (DB not found)")
+                
                 default_pixmap = self.create_scaled_pixmap("src/img/icon/profile.png", target_size)
                 self.profile_pic_label.setPixmap(default_pixmap)
                 return
 
             conn = sqlite3.connect(DB_PATH)
             cursor = conn.cursor()
+            
             cursor.execute("""
                 SELECT first_name, last_name, gender, email, phone, address, profile_img 
                 FROM users 
                 WHERE username = ?
             """, (self.current_username,))
+            
             user_data = cursor.fetchone()
             conn.close()
 
             if user_data:
                 fname, lname, gender, email, phone, address, img_path = user_data
+                
                 self.profile_username_field.setText(self.current_username)
                 self.profile_fname_field.setText(fname or "")
                 self.profile_lname_field.setText(lname or "")
+                
                 gender_value = gender or ""
                 index = self.profile_gender_field.findText(gender_value, Qt.MatchFlag.MatchFixedString)
                 if index >= 0:
                     self.profile_gender_field.setCurrentIndex(index)
                 else:
                     self.profile_gender_field.setCurrentIndex(0)
+                    if gender_value not in ["", "N/A"]:
+                            print(f"คำเตือน: เพศ '{gender_value}' จาก DB ไม่ตรงกับตัวเลือก, ตั้งเป็นค่าเริ่มต้น")
                 
                 self.profile_email_field.setText(email or "")
                 self.profile_phone_field.setText(phone or "") 
@@ -998,10 +1028,14 @@ class MainAdminWindow(QMainWindow):
                 image_path_to_load = img_path if (img_path and os.path.exists(img_path)) else "src/img/icon/profile.png"
                 scaled_pixmap = self.create_scaled_pixmap(image_path_to_load, target_size)
                 self.profile_pic_label.setPixmap(scaled_pixmap)
+                
             else:
                 print(f"ไม่พบผู้ใช้: {self.current_username}")
                 self.profile_username_field.setText(self.current_username)
                 self.profile_fname_field.setText("N/A")
+                self.profile_lname_field.setText("N/A")
+                self.profile_gender_field.setCurrentIndex(0)
+                
                 default_pixmap = self.create_scaled_pixmap("src/img/icon/profile.png", target_size)
                 self.profile_pic_label.setPixmap(default_pixmap)
 
@@ -1011,6 +1045,7 @@ class MainAdminWindow(QMainWindow):
 
     def set_profile_fields_read_only(self, read_only):
         for field in self.editable_profile_fields:
+            
             is_read_only_widget = isinstance(field, (QLineEdit, QTextEdit))
             is_combo_box = isinstance(field, QComboBox)
 
@@ -1021,6 +1056,7 @@ class MainAdminWindow(QMainWindow):
 
             field.setProperty("readOnly", read_only) 
             self.style().polish(field)
+
 
     def enable_edit_mode(self):
         self.set_profile_fields_read_only(False)
@@ -1036,21 +1072,30 @@ class MainAdminWindow(QMainWindow):
 
     def toggle_edit_mode(self):
         if self.is_in_edit_mode:
+            print("ยกเลิกการแก้ไขโปรไฟล์")
             self.disable_edit_mode()
             self.is_in_edit_mode = False
         else:
+            print("เปิดใช้งานการแก้ไขโปรไฟล์")
             self.enable_edit_mode()
             self.is_in_edit_mode = True
 
     def select_profile_image(self):
         file_path, _ = QFileDialog.getOpenFileName(
-            self, "Select Profile Image", "", "Images (*.png *.jpg *.jpeg *.bmp)"
+            self, 
+            "Select Profile Image", 
+            "",
+            "Images (*.png *.jpg *.jpeg *.bmp)"
         )
+        
         if file_path:
             self.new_profile_img_path = os.path.normpath(file_path)
+            
             target_size = 250
             scaled_pixmap = self.create_scaled_pixmap(self.new_profile_img_path, target_size)
             self.profile_pic_label.setPixmap(scaled_pixmap)
+            
+            print(f"เลือกรูปโปรไฟล์ใหม่: {self.new_profile_img_path}")
 
     def save_profile_changes(self):
         try:
@@ -1060,52 +1105,80 @@ class MainAdminWindow(QMainWindow):
             email = self.profile_email_field.text()
             phone = self.profile_phone_field.text()
             address = self.profile_address_field.toPlainText()
+            
             image_to_save = self.new_profile_img_path if self.new_profile_img_path else self.current_profile_img_path
 
             conn = sqlite3.connect(DB_PATH)
             cursor = conn.cursor()
+            
             cursor.execute("""
                 UPDATE users 
-                SET first_name = ?, last_name = ?, gender = ?, email = ?, phone = ?, address = ?, profile_img = ?
-                WHERE username = ?
+                SET 
+                    first_name = ?, 
+                    last_name = ?, 
+                    gender = ?, 
+                    email = ?, 
+                    phone = ?, 
+                    address = ?, 
+                    profile_img = ?
+                WHERE 
+                    username = ?
             """, (fname, lname, gender, email, phone, address, image_to_save, self.current_username))
+            
             conn.commit()
             conn.close()
             
+            print(f"อัปเดตโปรไฟล์สำหรับ {self.current_username} สำเร็จ")
             QMessageBox.information(self, "Success", "Profile updated successfully!")
+
             self.disable_edit_mode()
+            
             self.is_in_edit_mode = False 
 
         except Exception as e:
             print(f"เกิดข้อผิดพลาดในการบันทึกโปรไฟล์: {e}")
             QMessageBox.warning(self, "Error", f"ไม่สามารถบันทึกการเปลี่ยนแปลงโปรไฟล์ได้: {e}")
 
+
     def show_profile_page(self):
         self.disable_edit_mode()
         self.load_user_profile()
+        
         self.is_in_edit_mode = False 
+        
         self.sidebar_stack.setCurrentIndex(1)
         self.main_content_stack.setCurrentIndex(1)
 
     def show_browse_page(self):
         self.sidebar_stack.setCurrentIndex(0)
         self.main_content_stack.setCurrentIndex(0)
-        self.filter_products_by_category("ALL")
+        self.filter_products_by_category("ALL") # (รีเฟรช grid ทุกครั้งที่กลับมา)
+
 
     def handle_logout(self):
         reply = QMessageBox.question(self, 'Logout', 'Are you sure you want to logout?',
                                      QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
                                      QMessageBox.StandardButton.No)
+
         if reply == QMessageBox.StandardButton.Yes:
             self.logout_requested.emit()
             self.close()
 
+    # (!!! ลบ !!!)
+    # (ฟังก์ชัน Placeholder ถูกลบออก)
+    # def placeholder_add_comic(self):
+    #     ...
+
+    # (!!! ใหม่ !!!)
+    # ฟังก์ชันสำหรับสลับไปหน้า Add Comic
     def show_add_comic_page(self):
         print("กำลังแสดงหน้า Add Comic")
-        self.clear_add_comic_form()
+        self.clear_add_comic_form() # (ล้างฟอร์มทุกครั้งที่เปิด)
         self.sidebar_stack.setCurrentIndex(3)
         self.main_content_stack.setCurrentIndex(3)
 
+    # (!!! ใหม่ !!!)
+    # ฟังก์ชันสำหรับล้างฟอร์ม Add Comic
     def clear_add_comic_form(self):
         self.add_comic_name.clear()
         self.add_comic_volume.clear()
@@ -1118,62 +1191,90 @@ class MainAdminWindow(QMainWindow):
         self.add_comic_price.clear()
         
         self.new_comic_img_path = None
-        self.add_comic_img_preview.clear()
-        self.add_comic_img_preview.setText("Upload Comic image")
+        self.add_comic_img_preview.clear() # (ล้างรูป)
+        self.add_comic_img_preview.setText("Upload Comic image") # (ใส่ข้อความกลับไป)
+        # (คืน style พื้นหลังสีขาว)
         self.add_comic_img_preview.setStyleSheet("background-color: white; border: 1px solid #ccc;")
 
+    # (!!! ใหม่ !!!)
+    # ฟังก์ชันสำหรับเลือกรูปปก Comic
     def select_new_comic_image(self):
         file_path, _ = QFileDialog.getOpenFileName(
-            self, "Select Comic Cover Image", "", "Images (*.png *.jpg *.jpeg *.bmp)"
+            self, 
+            "Select Comic Cover Image", 
+            "",
+            "Images (*.png *.jpg *.jpeg *.bmp)"
         )
+        
         if file_path:
             self.new_comic_img_path = os.path.normpath(file_path)
+            
             try:
                 target_size = self.add_comic_img_preview.size()
                 pixmap = QPixmap(self.new_comic_img_path)
+                
+                # (ใช้ KeepAspectRatio เพื่อให้ปก comic ไม่บิดเบี้ยว)
                 scaled_pixmap = pixmap.scaled(
-                    target_size, Qt.AspectRatioMode.KeepAspectRatio, Qt.TransformationMode.SmoothTransformation
+                    target_size, 
+                    Qt.AspectRatioMode.KeepAspectRatio, 
+                    Qt.TransformationMode.SmoothTransformation
                 )
+                
                 self.add_comic_img_preview.setPixmap(scaled_pixmap)
-                self.add_comic_img_preview.setText("") 
+                self.add_comic_img_preview.setText("") # (ลบข้อความ placeholder)
             except Exception as e:
                 print(f"Error loading new comic image: {e}")
                 self.add_comic_img_preview.setText("Error loading image")
                 self.new_comic_img_path = None
+                
+            print(f"เลือกรูป comic ใหม่: {self.new_comic_img_path}")
 
+    # (!!! ใหม่ !!!)
+    # ฟังก์ชันสำหรับบันทึก Comic ใหม่ลง DB
     def save_new_comic(self):
         try:
+            # 1. ดึงข้อมูลจากฟอร์ม
             name = self.add_comic_name.text().strip()
             volume = self.add_comic_volume.text().strip()
             desc = self.add_comic_desc.toPlainText().strip()
             writer = self.add_comic_writer.text().strip()
             rated = self.add_comic_rated.text().strip()
-            isbn_str = self.add_comic_isbn.text().strip()
+            isbn_str = self.add_comic_isbn.text().strip() # (นี่คือ ID)
             category = self.add_comic_category.currentText()
             stock_str = self.add_comic_stock.text().strip()
             price_str = self.add_comic_price.text().strip()
             img_path = self.new_comic_img_path
 
+            # 2. ตรวจสอบข้อมูลเบื้องต้น
             if not all([name, isbn_str, stock_str, price_str, img_path]):
                 QMessageBox.warning(self, "Missing Information", 
                                     "Please fill in all fields (Name, ISBN, Stock, Price) and upload an image.")
                 return
 
+            # 3. แปลงค่าและตรวจสอบตัวเลข
             try:
+                # (ISBN/ID ควรเป็นตัวเลข ตามโครงสร้าง DB ที่มีอยู่)
                 id_val = int(isbn_str) 
                 stock = int(stock_str)
                 price = float(price_str)
+                
                 if stock < 0 or price < 0:
                     raise ValueError("Stock and Price cannot be negative.")
+
             except ValueError as e:
+                print(f"Validation Error: {e}")
                 QMessageBox.warning(self, "Invalid Input", 
                                     f"Please enter valid numbers for ISBN, Stock, and Price.\n(Error: {e})")
                 return
 
+            # (ดึงเวลาปัจจุบัน)
             created_at = datetime.datetime.now().isoformat()
 
+            # 4. เชื่อมต่อ DB และ INSERT
             conn = sqlite3.connect(DB_PATH)
             cursor = conn.cursor()
+            
+            # (ตรวจสอบว่า ID/ISBN ซ้ำหรือไม่)
             cursor.execute("SELECT 1 FROM product WHERE id = ?", (id_val,))
             if cursor.fetchone():
                 QMessageBox.warning(self, "Duplicate Entry", 
@@ -1181,28 +1282,77 @@ class MainAdminWindow(QMainWindow):
                 conn.close()
                 return
 
+            # (INSERT ข้อมูลใหม่)
             cursor.execute("""
                 INSERT INTO product (
                     id, name, volume_issue, description, writer, rated, 
                     category, stock, price, cover_img, created_at
                 )
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-            """, (id_val, name, volume, desc, writer, rated, category, stock, price, img_path, created_at))
+            """, (
+                id_val, name, volume, desc, writer, rated, 
+                category, stock, price, img_path, created_at
+            ))
             
             conn.commit()
             conn.close()
             
+            # 5. แจ้งผลและกลับไปหน้า Browse
+            print(f"เพิ่ม comic '{name}' (ID: {id_val}) สำเร็จ")
             QMessageBox.information(self, "Success", "New comic added successfully!")
-            self.show_browse_page()
+            
+            self.show_browse_page() # (กลับไปหน้า browse)
 
         except sqlite3.IntegrityError:
-             QMessageBox.warning(self, "Database Error", "An error occurred (IntegrityError). This ISBN (ID) might already exist.")
+             QMessageBox.warning(self, "Database Error", 
+                                 "An error occurred (IntegrityError). This ISBN (ID) might already exist.")
         except Exception as e:
             print(f"เกิดข้อผิดพลาดในการบันทึก comic: {e}")
             QMessageBox.warning(self, "Error", f"Could not save new comic: {e}")
 
+
+# (!!! ใหม่ !!!)
+# ฟังก์ชันสำหรับจำลองการตรวจสอบสิทธิ์ Admin
+def check_admin_role(username):
+    """
+    (ฟังก์ชันตัวอย่าง) ตรวจสอบว่าผู้ใช้เป็น admin หรือไม่
+    ในแอปจริง, หน้าต่าง Login จะเป็นผู้เรียกใช้ Logic นี้
+    (และควรตรวจสอบรหัสผ่านด้วย)
+    """
+    if not os.path.exists(DB_PATH):
+        print(f"Database not found at {DB_PATH}. Cannot verify admin role.")
+        return False
+        
+    conn = None
+    try:
+        conn = sqlite3.connect(DB_PATH)
+        cursor = conn.cursor()
+        
+        # (สำคัญ) ตรวจสอบทั้ง username และ role = 'admin'
+        cursor.execute(
+            "SELECT role FROM users WHERE username = ? AND role = 'admin'", 
+            (username,)
+        )
+        admin_user = cursor.fetchone()
+        
+        if admin_user:
+            print(f"Verification successful: {username} is an admin.")
+            return True
+        else:
+            print(f"Verification failed: {username} is not an admin or does not exist.")
+            return False
+            
+    except sqlite3.Error as e:
+        print(f"Error checking admin role: {e}")
+        return False
+    finally:
+        if conn:
+            conn.close()
+
 if __name__ == '__main__':
     app = QApplication(sys.argv)
+    
+    
     window = MainAdminWindow(username="data6189") 
     window.show()
     sys.exit(app.exec())
