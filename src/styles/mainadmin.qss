@@ -402,15 +402,20 @@ QLineEdit#detailPriceField:read-only {
     padding-left: 5px;
 }
 
-/* --- Edit Mode (เมื่อแก้ไข) --- */
+QFrame#ProductDetailPage QLineEdit:!read-only,
+QFrame#ProductDetailPage QTextEdit:!read-only,
 QFrame#ProductDetailPage QComboBox:enabled {
-    background-color: #FFFFFF;
-    font-size: 14px;
+    background-color: white;       /* สีพื้นหลังเข้มขึ้นเล็กน้อยเพื่อให้ตัดกับพื้นหลังหลัก */
     color: #000000;
+    border: 1px solid #007acc;       /* ขอบสีฟ้า */
+    border-left: 5px solid #007acc;  /* แถบสีฟ้าด้านซ้ายเหมือนปุ่ม Sidebar */
+    font-size: 14px;
 }
+
 
 QFrame#ProductDetailPage QComboBox QAbstractItemView {
     background-color: #ebebeb;
+    border-left: 5px solid #007acc;
     color: #000000;
 }
 
@@ -419,25 +424,24 @@ QFrame#ProductDetailPage QComboBox QAbstractItemView {
 /* ใช้สไตล์พื้นฐานร่วมกัน */
 QPushButton#editButton, QPushButton#confirmButton, 
 QPushButton#cancelButton, QPushButton#deleteButton {
-    border-radius: 10px;
-    font-weight: bold;
-    font-size: 16px;
-    color: rgb(0, 0, 0);
+    background-color: #FFFFFF;
+    font-size: 14px;
+    color: #333333;
 }
 
 /* ปุ่ม Edit (สีฟ้า) */
 QPushButton#editButton {
-    border: 1px solid #000000;
-    background: transparent;
+    background-color: #007BFF; /* สีน้ำเงินหลัก */
+    color: white;
 }
 QPushButton#editButton:hover {
-    background-color: #007acc;
+    background-color: #0056b3;
 }
 
 /* ปุ่ม Confirm (สีเขียว) */
 QPushButton#confirmButton {
-    border: 1px solid #000000;
-    background: transparent;
+    background-color: #1bd045; /* สีน้ำเงินหลัก */
+    color: white;
 }
 QPushButton#confirmButton:hover {
     background-color: #28a745;
@@ -445,20 +449,20 @@ QPushButton#confirmButton:hover {
 
 /* ปุ่ม Cancel (สีเทา) */
 QPushButton#cancelButton {
-    border: 1px solid #000000;
-    background: transparent;
+    background-color: #d4130d;
+    color: white;
 }
 QPushButton#cancelButton:hover {
-    background-color: #d9534f;
+    background-color: #972a27;
 }
 
 /* ปุ่ม Delete (สีแดง) */
 QPushButton#deleteButton {
-    border: 1px solid #000000;
-    background: transparent;
+    background-color: #d4130d;
+    color: white;
 }
 QPushButton#deleteButton:hover {
-    background-color: #d9534f;
+    background-color: #972a27;
 }
 
 /* ปุ่มเปลี่ยนรูป */
@@ -472,7 +476,8 @@ QPushButton#detailUploadButton {
 }
 QPushButton#detailUploadButton:hover {
     border: 1px solid #000000;
-    background-color: #007acc;
+    background-color: #007BFF;
+    color: white;
 }
 
 
@@ -630,138 +635,104 @@ QSpinBox::up-button:pressed, QSpinBox::down-button:pressed {
 
 
 
-/* --- Checkout Page Styles --- */
 
-/* กรอบ QR Code */
-#qrCodeLabel {
-    border: 2px solid #e0e0e0;
-    border-radius: 10px;
+
+
+
+
+
+
+
+
+
+
+
+
+/* --- Status Edit Section --- */
+
+/* ComboBox เลือกสถานะ */
+#statusEditCombo {
     background-color: #ffffff;
-    padding: 10px;
+    border: 2px solid #bdc3c7;
+    border-radius: 8px;
+    padding: 5px 10px;
+    font-size: 16px;
+    color: #333;
 }
 
-/* หัวข้อ QR Code */
-#qrTitleLabel {
-    font-size: 18px;
-    color: #000000;
-    font-family: "Arial Black", sans-serif; /* หรือฟอนต์ที่คุณใช้ */
+#statusEditCombo:hover {
+    border-color: #3498db;
 }
 
-#uploadlabel{
-    font-size:22px;
+/* *** ตรงนี้คือส่วนที่ใส่รูป *** */
+#statusEditCombo::down-arrow {
+    image: url("src/img/icon/up.png"); /* ใส่ path รูปของคุณตรงนี้ */
+    width: 16px;  /* กำหนดขนาดรูป */
+    height: 16px;
+}
+
+/* (Optional) สถานะตอนกดปุ่ม Dropdown */
+#statusEditCombo::down-arrow:on {
+    /* คุณอาจจะมีรูป arrow_up.png สำหรับตอนกด */
+    /* image: url(src/img/icon/arrow_up.png); */
+    top: 1px; /* ขยับรูปลงนิดหน่อยให้ดูเหมือนถูกกด */
+    left: 1px;
+}
+/* ปุ่ม Cancel (กากบาทสีแดง) */
+#cancelStatusButton {
+    background-color: #e74c3c;
+    color: white;
+    border: none;
+    border-radius: 8px;
     font-weight: bold;
-    color:black;
+    font-size: 20px;
 }
 
-/* ช่อง Upload Path */
-QLineEdit[readOnly="true"] {
-    background-color: #f9f9f9;
-    color: #555555;
-    border: 1px solid #cccccc;
+#cancelStatusButton:hover {
+    background-color: #c0392b;
 }
 
-#slipPathField {
-    background-color: #f8f9fa;
-    color: #495057;
-    border: 2px solid #ced4da;
-    border-color: #3498db;
-    border-radius: 5px; /* ทำเป็นแคปซูล */
-    padding-left: 15px;
-    padding-right: 15px;
-    font-size: 14px;
+/* ปุ่ม Edit Status หลัก */
+#editStatusButton {
+    background-color: #3498db;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-weight: bold;
+    font-size: 16px;
 }
 
-#uploadSlipButton {
-    background-color: #e9ecef;
-    border: 2px solid;
-    border-color: #3498db;
-    border-radius: 5px; /* ปุ่มกลม */
-}
-#uploadSlipButton:hover {
+#editStatusButton:hover {
     background-color: #2980b9;
 }
 
-
-/* 3. Instructions Section */
-#instructionLabel {
-    background-color: #e8f4fd; /* สีพื้นหลังฟ้าอ่อน */
-    border-left: 6px solid #3498db; /* แถบสีด้านซ้าย */
-    padding: 20px;
-    border-radius: 8px;
-    color: #2c3e50;
-    font-size: 15px;
-    line-height: 1.6; /* เพิ่มระยะห่างระหว่างบรรทัด */
+#editStatusButton:pressed {
+    background-color: #2573a7;
 }
 
-/* 4. Summary Section (ปรับปรุงใหม่ตามที่ตั้งชื่อ objectName ไว้) */
-
-/* เส้นคั่น */
-QFrame[frameShape="4"] { /* 4 คือ HLine */
-    color: #292c2c;
-}
-
-/* Title ทั่วไป (Subtotal, Shipping, Vat) */
-#checkoutSubtotalTitle, #checkoutShippingTitle, #checkoutVatTitle {
-    font-size: 15px;
-    color: #292c2c;
-    font-weight: normal;
-}
-
-/* Value ทั่วไป (Subtotal, Shipping, Vat) */
-#checkoutSubtotalValue, #checkoutShippingValue, #checkoutVatValue {
-    font-size: 16px;
+#statusEditCombo QAbstractItemView {
+    background-color: #ffffff; /* สีพื้นหลังรายการเป็นสีขาว */
+    border: 1px solid #bdc3c7; /* ขอบของ Dropdown list */
     color: #000000;
-    font-weight: 600; /* Semi-bold */
+    outline: none; /* ลบเส้นประเวลาคลิก */
 }
 
-/* Total Amount (ต้องเด่นที่สุด) */
-#checkoutTotalTitle {
-    font-size: 20px;
-    color: #292c2c;
-    margin-top: 10px; /* เพิ่มระยะห่างจากเส้นคั่น */
-}
 
-#checkoutTotalValue {
-    font-size: 28px; /* ใหญ่พิเศษ */
-    font-weight: 900; /* Extra-bold */
-    color: #000000; /* สีแดงเด่น */
-    font-family: "Segoe UI Black", "Arial Black", sans-serif;
-    margin-top: 10px;
-}
 
-/* 5. Bottom Buttons */
-#checkoutBackButton {
-    background-color: #007BFF; /* สีน้ำเงินหลัก */
-    color: white;
-    font-size: 14pt;
-    font-weight: 700;
-    border-radius: 8px;
-    padding: 10px 20px;
-    min-width: 150px;
-}
-#checkoutBackButton:hover {
-    background-color: #0056b3;
-}
 
-#confirmPaymentButton {
-    background-color: #2ecc71; /* สีเขียว */
-    color: white;
-    font-size: 14pt;
-    font-weight: 700;
-    border-radius: 8px;
-    padding: 10px 20px;
-    min-width: 150px;
-}
-#confirmPaymentButton:hover {
-    background-color: #27ae60; /* เขียวเข้มขึ้นเมื่อชี้ */
-}
-#confirmPaymentButton:pressed {
-    background-color: #219a52;
-}
-#confirmPaymentButton:disabled {
-    background-color: #bdc3c7; /* สีเทาเมื่อยังไม่พร้อมใช้งาน */
-    color: #ecf0f1;
-}
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -863,40 +834,83 @@ QPushButton#ordDownloadButton:hover{
 
 
 
+/* ==========================================================================
+   [PAGE] ORDER DETAILS (ADMIN)
+   ========================================================================== */
 
+/* กรอบข้อมูลลูกค้าฝั่งซ้าย */
+#customerInfoFrame {
+    background-color: #f9f9f9;
+    border-radius: 10px;
+    /* ใน QSS บางครั้ง padding ของ QFrame ต้องกำหนดผ่าน property โดยตรงในบาง Widget
+       แต่ถ้าใช้ QVBoxLayout ข้างในแล้ว setContentsMargins ไว้ใน Python ก็เพียงพอ
+       หรือถ้าอยากกำหนดในนี้ให้ลองใช้: */
+    padding: 20px;
+}
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-/* sidebar พวกdef cart */
-
-QPushButton#sidebarButtonActive{
-    color: white;
-    border: 1px solid black;
-    font-size: 16px;
-    padding: 10px;
-    border-radius: 5px;
-    background-color: #406fb0; /* สีดำ/เทาเข้ม */
-    padding-left: 20px;
+/* หัวข้อ "ที่อยู่จัดส่ง :" */
+#customerInfoHeader {
+    font-size: 18px;
     font-weight: bold;
+    color: #333333;
+    /* margin-bottom อาจไม่ส่งผลใน QLabel บาง platform ใช้การเว้นระยะใน Layout แทนจะชัวร์กว่า
+       แต่ใส่ไว้เผื่อได้ผล */
+    margin-bottom: 15px;
+    font-family: 'Segoe UI', sans-serif;
 }
 
-QPushButton#sidebarButtonActive:hover{
-    background-color: #233755;
+/* ข้อความแสดงข้อมูลลูกค้า (เช่น ชื่อ, ที่อยู่) */
+#customerInfoValue {
+    font-size: 16px;
+    color: #555555;
+    font-family: 'Segoe UI', sans-serif;
 }
+
+/* เส้นคั่นในส่วนสรุปยอดเงิน */
+#summarySeparatorLine {
+    background-color: #000000;
+    max-height: 2px;
+    min-height: 2px; /* ฟิกซ์ความสูงให้แน่นอน */
+    border: none;
+    margin: 10px 0;
+}
+
+/* (Optional) หัวข้อ Form เช่น "Customer ID:" ถ้าอยากปรับสี */
+#customerInfoLabel {
+    font-size: 16px;
+    font-weight: bold;
+    color: #333333;
+}
+
+/* --- QScrollArea สำหรับ Order Details --- */
+#orderDetailScrollArea {
+    background-color: transparent;
+}
+
+/* --- (Optional) สำหรับ Content Widget ด้านใน Scroll Area หากยังเห็นสีดำแทรก --- */
+#orderDetailContentWidget {
+    background-color: transparent;
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

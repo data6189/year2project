@@ -2218,6 +2218,6 @@ class MainUserWindow(QMainWindow):
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)
-    window = MainUserWindow(username="test")
+    window = MainUserWindow(username="sad123")
     window.show()
     sys.exit(app.exec())

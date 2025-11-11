@@ -10,7 +10,7 @@ DB_PATH = "src/database/thisshop.db"
 now = datetime.now()
 
 # --- IMPORT สำหรับ Info Window ---
-InfoWindow = None  # กำหนดค่าเริ่มต้นเป็น None ป้องกัน NameError
+feedbackWindow = None  # กำหนดค่าเริ่มต้นเป็น None ป้องกัน NameError
 try:
     from feedback_window import feedbackWindow
 except ImportError:
@@ -72,11 +72,15 @@ class MainAdminWindow(QMainWindow):
         self.profile_sidebar = self.create_profile_sidebar()
         self.detail_sidebar = self.create_detail_sidebar() 
         self.add_comic_sidebar = self.create_add_comic_sidebar()
+        self.orders_sidebar = self.create_orders_sidebar()
+        self.order_details_sidebar = self.create_order_details_sidebar()
         
         self.sidebar_stack.addWidget(self.browse_sidebar)     # Index 0
         self.sidebar_stack.addWidget(self.profile_sidebar)    # Index 1
         self.sidebar_stack.addWidget(self.detail_sidebar)     # Index 2
         self.sidebar_stack.addWidget(self.add_comic_sidebar)  # Index 3
+        self.sidebar_stack.addWidget(self.orders_sidebar)        # Index 4
+        self.sidebar_stack.addWidget(self.order_details_sidebar) # Index 5
         
         self.body_layout.addWidget(self.sidebar_stack) 
 
@@ -85,11 +89,15 @@ class MainAdminWindow(QMainWindow):
         self.profile_page = self.create_profile_page()
         self.product_detail_page = self.create_product_detail_page() 
         self.add_comic_page = self.create_add_comic_page()
+        self.orders_page = self.create_orders_page()
+        self.order_details_page = self.create_order_details_page()
 
         self.main_content_stack.addWidget(self.browse_page)         # Index 0
         self.main_content_stack.addWidget(self.profile_page)        # Index 1
         self.main_content_stack.addWidget(self.product_detail_page) # Index 2
         self.main_content_stack.addWidget(self.add_comic_page)      # Index 3
+        self.main_content_stack.addWidget(self.orders_page)         # Index 4
+        self.main_content_stack.addWidget(self.order_details_page)  # Index 5
         
         self.body_layout.addWidget(self.main_content_stack, 1)
 
@@ -165,6 +173,7 @@ class MainAdminWindow(QMainWindow):
         self.btn_orders = QPushButton("Orders")
         self.btn_orders.setObjectName("navButton")
         self.btn_orders.setFixedSize(button_width, button_height)
+        self.btn_orders.clicked.connect(self.show_orders_page)
         right_grid.addWidget(self.btn_orders, 1, 1)
         
         # (คอลัมน์ 2: LOGOUT)
@@ -1043,7 +1052,633 @@ class MainAdminWindow(QMainWindow):
             except Exception as e:
                 print(f"Error deleting product: {e}")
                 QMessageBox.warning(self, "Error", f"Could not delete product: {e}")
+    
+    
+    
+    # --- [NEW] SIDEBARS FOR ORDERS ---
+    def create_orders_sidebar(self):
+        sidebar_frame = QFrame()
+        sidebar_frame.setObjectName("Sidebar")
+        sidebar_layout = QVBoxLayout(sidebar_frame)
+        sidebar_layout.setContentsMargins(20, 30, 20, 20)
+        sidebar_layout.setSpacing(25)
+        sidebar_layout.setAlignment(Qt.AlignmentFlag.AlignTop)
+
+        button_height = 55
+        # คุณอาจจะอยากเพิ่มปุ่มกรอง Status ตรงนี้ในอนาคต (Pending, Paid, etc.)
         
+        btn_back = QPushButton("Back")
+        btn_back.setObjectName("backsidebarButton")
+        btn_back.setFixedHeight(button_height)
+        btn_back.clicked.connect(self.show_browse_page)
+        sidebar_layout.addWidget(btn_back)
+
+        sidebar_layout.addStretch()
+        return sidebar_frame
+
+    def create_order_details_sidebar(self):
+        sidebar_frame = QFrame()
+        sidebar_frame.setObjectName("Sidebar")
+        sidebar_layout = QVBoxLayout(sidebar_frame)
+        sidebar_layout.setContentsMargins(20, 30, 20, 20)
+        sidebar_layout.setSpacing(25)
+        sidebar_layout.setAlignment(Qt.AlignmentFlag.AlignTop)
+
+        button_height = 55
+        btn_back = QPushButton("Back")
+        btn_back.setObjectName("backsidebarButton")
+        btn_back.setFixedHeight(button_height)
+        # กลับไปหน้ารายการ Orders
+        btn_back.clicked.connect(self.show_orders_page)
+        sidebar_layout.addWidget(btn_back)
+
+        sidebar_layout.addStretch()
+        return sidebar_frame
+
+    # --- [NEW] ORDERS PAGE (ADMIN) ---
+    def create_orders_page(self):
+        page_frame = QFrame()
+        main_layout = QVBoxLayout(page_frame)
+        # [MARGINS] ตามต้นฉบับ mainuser.py ห้ามแก้ไข
+        main_layout.setContentsMargins(250, 40, 50, 40)
+        main_layout.setSpacing(20)
+
+        self.orders_table = QTableWidget()
+        self.orders_table.setObjectName("ordersTable")
+        # [MODIFIED] เพิ่มเป็น 3 คอลัมน์เพื่อใส่ CUSTOMER
+        self.orders_table.setColumnCount(3)
+        self.orders_table.setHorizontalHeaderLabels(["Order Info", "CUSTOMER", "STATUS"])
+
+        header = self.orders_table.horizontalHeader()
+        header.setSectionResizeMode(0, QHeaderView.ResizeMode.Stretch)
+        # ปรับขนาดคอลัมน์ CUSTOMER และ STATUS
+        header.setSectionResizeMode(1, QHeaderView.ResizeMode.ResizeToContents)
+        header.setSectionResizeMode(2, QHeaderView.ResizeMode.Fixed)
+        self.orders_table.setColumnWidth(2, 150)
+
+        self.orders_table.verticalHeader().setVisible(False)
+        self.orders_table.setSelectionMode(QAbstractItemView.SelectionMode.SingleSelection)
+        self.orders_table.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows)
+        self.orders_table.setFocusPolicy(Qt.FocusPolicy.NoFocus)
+        self.orders_table.setShowGrid(True)
+
+        self.orders_table.cellClicked.connect(self.on_order_clicked)
+
+        main_layout.addWidget(self.orders_table)
+
+        return page_frame
+
+    def show_orders_page(self):
+        self.load_orders_data()
+        self.sidebar_stack.setCurrentIndex(4)
+        self.main_content_stack.setCurrentIndex(4)
+
+    def load_orders_data(self):
+        self.orders_table.setRowCount(0)
+        try:
+            conn = sqlite3.connect(DB_PATH)
+            cursor = conn.cursor()
+            # [MODIFIED] Query สำหรับ Admin ดึงทั้งหมด และดึง user_id ด้วย
+            cursor.execute("""
+                SELECT order_id, order_date, status, user_id 
+                FROM orders
+                ORDER BY order_id DESC
+            """)
+            orders = cursor.fetchall()
+            conn.close()
+
+            self.orders_table.setRowCount(len(orders))
+            for i, (order_id, order_date, status, user_id) in enumerate(orders):
+                # --- Column 0: Order Info ---
+                date_widget = QWidget()
+                date_layout = QVBoxLayout(date_widget)
+                date_layout.setAlignment(Qt.AlignmentFlag.AlignCenter)
+                date_layout.setSpacing(0)
+
+                lbl_title = QLabel(f"Order ID: #{order_id}")
+                lbl_title.setObjectName("orderDateTitle")
+                lbl_title.setAlignment(Qt.AlignmentFlag.AlignCenter)
+                date_layout.addWidget(lbl_title)
+
+                # แยกวันที่และเวลา
+                parts = order_date.split(' ')
+                date_text = parts[0]
+                time_text = parts[1] if len(parts) > 1 else ""
+
+                lbl_date = QLabel(date_text)
+                lbl_date.setObjectName("orderDateLabel")
+                lbl_date.setAlignment(Qt.AlignmentFlag.AlignCenter)
+                date_layout.addWidget(lbl_date)
+
+                if time_text:
+                    lbl_time = QLabel(time_text)
+                    lbl_time.setObjectName("orderTimeLabel")
+                    lbl_time.setAlignment(Qt.AlignmentFlag.AlignCenter)
+                    date_layout.addWidget(lbl_time)
+
+                self.orders_table.setCellWidget(i, 0, date_widget)
+
+                # --- [NEW] Column 1: CUSTOMER ---
+                user_item = QTableWidgetItem(str(user_id))
+                user_item.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
+                user_item.setFlags(Qt.ItemFlag.ItemIsEnabled | Qt.ItemFlag.ItemIsSelectable)
+                self.orders_table.setItem(i, 1, user_item)
+
+                # --- Column 2: STATUS ---
+                status_item = QTableWidgetItem(status)
+                status_item.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
+                status_item.setFont(QFont("Arial", 14, QFont.Weight.Bold)) # ปรับฟอนต์เล็กน้อยให้เหมาะกับ Admin
+                
+                # กำหนดสีสถานะ (Optional: เพื่อความสวยงามของ Admin)
+                if status == 'pending':
+                    status_item.setForeground(QBrush(QColor("#f39c12"))) # สีส้ม
+                elif status == 'paid':
+                     status_item.setForeground(QBrush(QColor("#2ecc71"))) # สีเขียว
+                elif status == 'cancelled':
+                     status_item.setForeground(QBrush(QColor("#ff0000"))) # สีเขียว
+                elif status == 'dispatched':
+                     status_item.setForeground(QBrush(QColor("#1aff00"))) # สีเขียว
+
+                # เก็บ order_id ไว้ใน UserData ของ cell นี้เพื่อใช้ตอนคลิก
+                status_item.setData(Qt.ItemDataRole.UserRole, order_id)
+                status_item.setFlags(Qt.ItemFlag.ItemIsEnabled | Qt.ItemFlag.ItemIsSelectable)
+                self.orders_table.setItem(i, 2, status_item)
+
+                self.orders_table.setRowHeight(i, 110) # ปรับความสูงแถวเล็กน้อย
+
+        except Exception as e:
+            print(f"Error loading orders: {e}")
+
+    def on_order_clicked(self, row, col):
+        # ดึง order_id ที่ซ่อนไว้ในคอลัมน์ Status (index 2)
+        status_item = self.orders_table.item(row, 2)
+        if status_item:
+            order_id = status_item.data(Qt.ItemDataRole.UserRole)
+            self.show_order_details_page(order_id)
+
+
+
+    # --- [UPDATED] ORDER DETAILS PAGE (ADMIN) ---
+    def create_order_details_page(self):
+        # 1. สร้าง Widget หลักสำหรับหน้านี้
+        page_widget = QWidget()
+        page_layout = QVBoxLayout(page_widget)
+        page_layout.setContentsMargins(290, 10, 20, 10)
+        page_layout.setSpacing(0)
+
+# 2. สร้าง Scroll Area หลัก (ครอบทั้งหน้าเผื่อจอเล็กมาก)
+        main_scroll_area = QScrollArea()
+        main_scroll_area.setObjectName("orderDetailScrollArea")
+        main_scroll_area.setWidgetResizable(True)
+        main_scroll_area.setFrameShape(QFrame.Shape.NoFrame)
+
+        # 3. สร้าง Widget เนื้อหาข้างใน
+        content_widget = QWidget()
+        content_widget.setObjectName("orderDetailContentWidget")
+        content_layout = QVBoxLayout(content_widget)
+        content_layout.setContentsMargins(50, 30, 50, 30)
+        content_layout.setSpacing(20)
+
+        # --- Header ---
+        self.order_details_header = QLabel("Order Details #...")
+        self.order_details_header.setObjectName("detailsHeader")
+        content_layout.addWidget(self.order_details_header)
+
+        # --- ตารางสินค้า ---
+        self.order_items_table = QTableWidget()
+        self.order_items_table.setObjectName("cartTable")
+        self.order_items_table.setColumnCount(4)
+        self.order_items_table.setHorizontalHeaderLabels(["ITEM", "UNIT PRICE", "QUANTITY", "AMOUNT"])
+        self.order_items_table.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
+        self.order_items_table.verticalHeader().setVisible(False)
+        self.order_items_table.setMinimumHeight(350)
+        content_layout.addWidget(self.order_items_table)
+
+        # --- ส่วนล่าง (แบ่งซ้าย-ขวา) ---
+        bottom_split_layout = QHBoxLayout()
+        bottom_split_layout.setSpacing(30)
+        bottom_split_layout.setAlignment(Qt.AlignmentFlag.AlignTop)
+
+        # === [UPDATED] ฝั่งซ้าย: ที่อยู่จัดส่ง (มี Scrollbar เฉพาะส่วนนี้) ===
+        # 1. สร้าง Scroll Area สำหรับฝั่งซ้าย
+        left_scroll_area = QScrollArea()
+        left_scroll_area.setWidgetResizable(True)
+        left_scroll_area.setFrameShape(QFrame.Shape.NoFrame)
+        left_scroll_area.setMaximumHeight(400) # <-- กำหนดความสูงสูงสุด ถ้าเกินนี้จะเลื่อนได้
+
+        # 2. สร้าง Frame ข้อมูลลูกค้า
+        customer_info_frame = QFrame()
+        customer_info_frame.setObjectName("customerInfoFrame")
+        customer_layout = QVBoxLayout(customer_info_frame)
+        customer_layout.setContentsMargins(20, 20, 20, 20)
+        
+        header_label = QLabel("ที่อยู่จัดส่ง :")
+        header_label.setObjectName("customerInfoHeader")
+        customer_layout.addWidget(header_label)
+        customer_layout.addSpacing(10)
+
+        info_form = QFormLayout()
+        info_form.setSpacing(15)
+
+        self.cust_username_label = QLabel("-")
+        self.cust_firstname_label = QLabel("-")
+        self.cust_lastname_label = QLabel("-")
+        self.cust_tel_label = QLabel("-")
+        self.cust_email_label = QLabel("-")
+        self.cust_address_label = QLabel("-")
+        self.cust_address_label.setWordWrap(True) # สำคัญ! ให้ตัดบรรทัด
+
+        for lbl in [self.cust_username_label, self.cust_firstname_label, self.cust_lastname_label,
+                    self.cust_tel_label, self.cust_email_label, self.cust_address_label]:
+             lbl.setObjectName("customerInfoValue")
+
+        def form_lbl(text):
+            l = QLabel(text)
+            l.setObjectName("customerInfoLabel")
+            return l
+
+        info_form.addRow(form_lbl("Customer ID:"), self.cust_username_label)
+        info_form.addRow(form_lbl("First Name:"), self.cust_firstname_label)
+        info_form.addRow(form_lbl("Last Name:"), self.cust_lastname_label)
+        info_form.addRow(form_lbl("Tel:"), self.cust_tel_label)
+        info_form.addRow(form_lbl("Email:"), self.cust_email_label)
+        info_form.addRow(form_lbl("Address:"), self.cust_address_label)
+
+        customer_layout.addLayout(info_form)
+        
+        # 3. นำ Frame ใส่ใน Scroll Area ฝั่งซ้าย
+        left_scroll_area.setWidget(customer_info_frame)
+        bottom_split_layout.addWidget(left_scroll_area, 60) # กว้าง 60%
+
+        # === [ฝั่งขวา] สรุปยอดเงิน ===
+        summary_widget = QWidget()
+        summary_layout = QVBoxLayout(summary_widget)
+        summary_layout.setAlignment(Qt.AlignmentFlag.AlignTop | Qt.AlignmentFlag.AlignRight)
+        summary_layout.setSpacing(10)
+
+        def create_summary_row(text, val_label_obj_name, is_total=False):
+             row = QWidget(); l = QHBoxLayout(row); l.setContentsMargins(0,0,0,0); l.setAlignment(Qt.AlignmentFlag.AlignRight)
+             lbl_t = QLabel(text); lbl_t.setObjectName("cartSummaryLabel"); lbl_t.setAlignment(Qt.AlignmentFlag.AlignRight)
+             lbl_v = QLabel("0.00 THB"); lbl_v.setObjectName(val_label_obj_name); lbl_v.setAlignment(Qt.AlignmentFlag.AlignRight)
+             if is_total: lbl_v.setMinimumWidth(200)
+             else: lbl_v.setFixedWidth(150)
+             l.addWidget(lbl_t); l.addWidget(lbl_v)
+             return row, lbl_v
+
+        row_sub, self.ord_subtotal_label = create_summary_row("Subtotal :", "cartSummaryValue")
+        row_ship, self.ord_shipping_label = create_summary_row("Shipping :", "cartSummaryValue")
+        row_vat, self.ord_vat_label = create_summary_row("VAT 7% :", "cartSummaryValue")
+        row_tot, self.ord_total_label = create_summary_row("Total :", "cartTotalValue", True)
+
+        summary_layout.addWidget(row_sub)
+        summary_layout.addWidget(row_ship)
+        summary_layout.addWidget(row_vat)
+        
+        line = QFrame()
+        line.setFrameShape(QFrame.Shape.HLine)
+        line.setFrameShadow(QFrame.Shadow.Plain)
+        line.setFixedWidth(300)
+        line.setObjectName("summarySeparatorLine")
+        summary_layout.addWidget(line, alignment=Qt.AlignmentFlag.AlignRight)
+        
+        summary_layout.addWidget(row_tot)
+        bottom_split_layout.addWidget(summary_widget, 40) # กว้าง 40%
+
+        content_layout.addLayout(bottom_split_layout)
+
+        # --- ปุ่มกด ---
+        buttons_layout = QHBoxLayout()
+        #self.ord_back_button = QPushButton("Back to Orders")
+        #self.ord_back_button.setObjectName("ordBackButton")
+        #self.ord_back_button.setFixedSize(180, 50)
+        #self.ord_back_button.clicked.connect(self.show_orders_page)
+        
+        self.ord_view_slip_button = QPushButton("View Payment Slip")
+        self.ord_view_slip_button.setObjectName("confirmButton")
+        self.ord_view_slip_button.setFixedSize(220, 50)
+        self.ord_view_slip_button.clicked.connect(self.handle_view_slip_image_admin)
+
+        #buttons_layout.addWidget(self.ord_back_button)
+        buttons_layout.addStretch()
+        
+        # --- [ใหม่] ส่วนแก้ไขสถานะ ---
+        # 1. ComboBox สำหรับเลือกสถานะ (ซ่อนไว้ก่อน)
+        self.status_combo = QComboBox()
+        # ใช้ lowercase เพื่อให้ตรงกับที่มักใช้ใน DB (ปรับแก้ได้ถ้า DB คุณเก็บตัวพิมพ์ใหญ่)
+        self.status_combo.addItems(["pending", "paid", "dispatched", "cancelled"])
+        self.status_combo.setFixedSize(150, 50)
+        # ปรับสไตล์ให้ดูต่างจากปุ่มปกติเล็กน้อย
+        self.status_combo.setObjectName("statusEditCombo")
+        self.status_combo.setVisible(False)
+
+        # 2. ปุ่ม Save สำหรับยืนยันการเปลี่ยนสถานะ (ซ่อนไว้ก่อน)
+        self.btn_save_status = QPushButton("Save")
+        self.btn_save_status.setObjectName("confirmButton") # ใช้สีเขียว
+        self.btn_save_status.setFixedSize(50, 50)
+        self.btn_save_status.setVisible(False)
+        self.btn_save_status.clicked.connect(self.handle_save_status)
+
+        # 3. ปุ่ม Cancel เล็กๆ สำหรับยกเลิกการ edit (ซ่อนไว้ก่อน)
+        self.btn_cancel_status_edit = QPushButton("X")
+        self.btn_cancel_status_edit.setFixedSize(40, 45)
+        self.btn_cancel_status_edit.setObjectName("cancelStatusButton")
+        self.btn_cancel_status_edit.setVisible(False)
+        self.btn_cancel_status_edit.clicked.connect(self.toggle_status_edit_mode)
+
+        # 4. ปุ่ม Edit Status (แสดงตอนแรก)
+        self.btn_edit_status = QPushButton("Edit Status")
+        self.btn_edit_status.setFixedSize(140, 50)
+        self.btn_edit_status.setObjectName("editStatusButton")
+        self.btn_edit_status.clicked.connect(self.toggle_status_edit_mode)
+
+        # เพิ่มเข้า Layout
+        buttons_layout.addWidget(self.status_combo)
+        buttons_layout.addWidget(self.btn_cancel_status_edit)
+        buttons_layout.addWidget(self.btn_save_status)
+        buttons_layout.addWidget(self.btn_edit_status)
+        buttons_layout.addSpacing(15)
+        # ---------------------------
+        
+        buttons_layout.addWidget(self.ord_view_slip_button)
+        
+        # --- [ใหม่] เพิ่มปุ่ม Be Certified ต่อจากปุ่มดูสลิป ---
+        self.btn_be_certified = QPushButton("Be Certified")
+        # ใช้ ObjectName เดียวกับปุ่ม confirm เพื่อให้เป็นสีเขียว (ถ้าใน CSS มี)
+        # หรือจะตั้งชื่อใหม่แล้วไปเขียน CSS เพิ่มก็ได้
+        self.btn_be_certified.setObjectName("confirmButton")
+        self.btn_be_certified.setFixedSize(180, 50)
+        # เชื่อมกับฟังก์ชันที่จะสร้างในจุดที่ 2
+        self.btn_be_certified.clicked.connect(self.handle_be_certified)
+        
+        buttons_layout.addSpacing(15) # เว้นระยะห่างนิดหน่อย
+        buttons_layout.addWidget(self.btn_be_certified)
+        # --------------------------------------------------
+        
+        
+        content_layout.addSpacing(30)
+        content_layout.addLayout(buttons_layout)
+
+        # นำ Content ทั้งหมดใส่ใน Main Scroll Area
+        main_scroll_area.setWidget(content_widget)
+        page_layout.addWidget(main_scroll_area)
+
+        return page_widget
+
+    # --- [ใหม่] ฟังก์ชันสำหรับปุ่ม Be Certified ---
+    def handle_be_certified(self):
+        # ถามยืนยันก่อน
+        reply = QMessageBox.question(
+            self, 'Confirm Certification',
+            f"Are you sure you want to certify Order #{self.current_viewing_order_id}?\nThis will record the current payment date.",
+            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+            QMessageBox.StandardButton.No
+        )
+
+        if reply == QMessageBox.StandardButton.Yes:
+            try:
+                # หาวันเวลาปัจจุบัน
+                current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
+                conn = sqlite3.connect(DB_PATH)
+                cursor = conn.cursor()
+                # อัปเดต payment_date และเปลี่ยนสถานะเป็น paid
+                cursor.execute("""
+                    UPDATE orders 
+                    SET payment_date = ?, status = 'paid' 
+                    WHERE order_id = ?
+                """, (current_time, self.current_viewing_order_id))
+                conn.commit()
+                conn.close()
+
+                QMessageBox.information(self, "Success", f"Order #{self.current_viewing_order_id} has been certified.")
+                
+                # โหลดหน้า Order Details ใหม่เพื่อแสดงข้อมูลล่าสุด (ถ้าต้องการ)
+                # หรือจะกลับไปหน้ารายการ Orders ก็ได้ โดยใช้ self.show_orders_page()
+                self.show_orders_page() 
+
+            except Exception as e:
+                print(f"Error certifying order: {e}")
+                QMessageBox.warning(self, "Error", f"Could not certify order: {e}")
+
+    def show_order_details_page(self, order_id):
+        self.load_order_details(order_id)
+        self.sidebar_stack.setCurrentIndex(5)
+        self.main_content_stack.setCurrentIndex(5)
+
+    # --- [UPDATED] LOAD ORDER DETAILS ---
+    def load_order_details(self, order_id):
+        self.current_viewing_order_id = order_id
+        self.order_details_header.setText(f"Order Details #{order_id}")
+        self.order_items_table.setRowCount(0)
+        
+        # รีเซ็ตข้อมูลลูกค้าก่อนโหลดใหม่
+        for lbl in [self.cust_username_label, self.cust_firstname_label, self.cust_lastname_label,
+                    self.cust_tel_label, self.cust_email_label, self.cust_address_label]:
+            lbl.setText("Loading...")
+
+        # รีเซ็ตปุ่ม Edit Status
+        self.status_combo.setVisible(False)
+        self.btn_save_status.setVisible(False)
+        self.btn_cancel_status_edit.setVisible(False)
+        self.btn_edit_status.setVisible(True)
+
+        try:
+            conn = sqlite3.connect(DB_PATH)
+            cursor = conn.cursor()
+
+            # 1. ดึงข้อมูลสรุปออเดอร์ (เพิ่ม status, payment_date)
+            cursor.execute("""
+                SELECT subtotal, shipping_fee, vat, total, user_id, slip_image, status, payment_date
+                FROM orders WHERE order_id = ?
+            """, (order_id,))
+            order_summary = cursor.fetchone()
+            
+            if order_summary:
+                sub, ship, vat, tot, user_id, slip_path, status, pay_date = order_summary
+                
+                self.ord_subtotal_label.setText(f"{sub:,.2f} THB")
+                self.ord_shipping_label.setText(f"{ship:,.2f} THB")
+                self.ord_vat_label.setText(f"{vat:,.2f} THB")
+                self.ord_total_label.setText(f"{tot:,.2f} THB")
+                self.current_slip_path_admin = slip_path
+                
+                # เก็บสถานะปัจจุบันไว้ใช้งาน
+                self.current_order_status = status
+                self.current_payment_date = pay_date
+
+                # ตั้งค่า ComboBox ให้ตรงกับสถานะปัจจุบัน
+                index = self.status_combo.findText(status, Qt.MatchFlag.MatchFixedString)
+                if index >= 0:
+                    self.status_combo.setCurrentIndex(index)
+
+                # 2. ดึงข้อมูลลูกค้า
+                cursor.execute("""
+                    SELECT first_name, last_name, phone, email, address 
+                    FROM users WHERE username = ?
+                """, (user_id,))
+                user_info = cursor.fetchone()
+                
+                self.cust_username_label.setText(str(user_id))
+                if user_info:
+                    fname, lname, phone, email, address = user_info
+                    self.cust_firstname_label.setText(fname if fname else "-")
+                    self.cust_lastname_label.setText(lname if lname else "-")
+                    self.cust_tel_label.setText(phone if phone else "-")
+                    self.cust_email_label.setText(email if email else "-")
+                    self.cust_address_label.setText(address if address else "-")
+                else:
+                     for lbl in [self.cust_firstname_label, self.cust_lastname_label,
+                                 self.cust_tel_label, self.cust_email_label, self.cust_address_label]:
+                        lbl.setText("User not found")
+
+            # 3. ดึงรายการสินค้า
+            cursor.execute("""
+                SELECT p.name, p.cover_img, oi.unit_price, oi.quantity
+                FROM order_items oi
+                JOIN product p ON oi.product_id = p.id
+                WHERE oi.order_id = ?
+            """, (order_id,))
+            items = cursor.fetchall()
+            conn.close()
+
+            self.order_items_table.setRowCount(len(items))
+            for i, (p_name, p_img, unit_price, quantity) in enumerate(items):
+                item_widget = QWidget()
+                item_layout = QHBoxLayout(item_widget)
+                item_layout.setContentsMargins(5, 5, 5, 5)
+                img_label = QLabel()
+                img_label.setFixedSize(60, 90)
+                img_label.setScaledContents(True)
+                if p_img and os.path.exists(p_img):
+                    img_label.setPixmap(QPixmap(p_img))
+                else:
+                    img_label.setPixmap(QPixmap("src/img/icon/profile.png"))
+                name_label = QLabel(p_name)
+                name_label.setWordWrap(True)
+                name_label.setObjectName("cartItemName")
+                item_layout.addWidget(img_label)
+                item_layout.addWidget(name_label)
+                self.order_items_table.setCellWidget(i, 0, item_widget)
+
+                price_item = QTableWidgetItem(f"{unit_price:,.2f} THB")
+                price_item.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
+                price_item.setFlags(Qt.ItemFlag.ItemIsEnabled | Qt.ItemFlag.ItemIsSelectable)
+                self.order_items_table.setItem(i, 1, price_item)
+
+                qty_item = QTableWidgetItem(str(quantity))
+                qty_item.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
+                qty_item.setFlags(Qt.ItemFlag.ItemIsEnabled | Qt.ItemFlag.ItemIsSelectable)
+                self.order_items_table.setItem(i, 2, qty_item)
+
+                amount = unit_price * quantity
+                amount_item = QTableWidgetItem(f"{amount:,.2f} THB")
+                amount_item.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
+                amount_item.setFlags(Qt.ItemFlag.ItemIsEnabled | Qt.ItemFlag.ItemIsSelectable)
+                self.order_items_table.setItem(i, 3, amount_item)
+
+                self.order_items_table.setRowHeight(i, 100)
+
+        except Exception as e:
+            print(f"Error loading order details: {e}")
+            QMessageBox.warning(self, "Error", "Could not load order details.")
+
+
+    def toggle_status_edit_mode(self):
+        """สลับโหมดแสดง/ซ่อนปุ่มแก้ไขสถานะ"""
+        is_editing = self.status_combo.isVisible()
+        self.status_combo.setVisible(not is_editing)
+        self.btn_save_status.setVisible(not is_editing)
+        self.btn_cancel_status_edit.setVisible(not is_editing)
+        self.btn_edit_status.setVisible(is_editing)
+
+        if is_editing:
+             # คืนค่า ComboBox เป็นค่าเดิมถ้ายกเลิก
+             index = self.status_combo.findText(self.current_order_status, Qt.MatchFlag.MatchFixedString)
+             if index >= 0:
+                 self.status_combo.setCurrentIndex(index)
+
+    def handle_save_status(self):
+        """บันทึกการเปลี่ยนแปลงสถานะพร้อมเงื่อนไขพิเศษ"""
+        new_status = self.status_combo.currentText()
+        old_status = self.current_order_status
+
+        if new_status == old_status:
+            self.toggle_status_edit_mode()
+            return
+
+        # เงื่อนไข: ห้ามเปลี่ยนเป็น dispatched ถ้ายังไม่มี payment_date
+        if new_status == "dispatched" and not self.current_payment_date:
+            QMessageBox.warning(self, "Cannot Dispatch", "This order has not been paid yet (No payment date).")
+            index = self.status_combo.findText(old_status, Qt.MatchFlag.MatchFixedString)
+            self.status_combo.setCurrentIndex(index)
+            return
+
+        reply = QMessageBox.question(
+            self, 'Confirm Status Change',
+            f"Change status from '{old_status}' to '{new_status}'?\n(This action may affect stock or records)",
+            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+            QMessageBox.StandardButton.No
+        )
+
+        if reply == QMessageBox.StandardButton.Yes:
+            try:
+                conn = sqlite3.connect(DB_PATH)
+                cursor = conn.cursor()
+                current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
+                # ถ้าเปลี่ยนเป็น cancelled ให้คืนสต็อกและบันทึกเวลา
+                if new_status == "cancelled" and old_status != "cancelled":
+                    cursor.execute("""
+                        UPDATE orders 
+                        SET status = ?, cancelled_date = ? 
+                        WHERE order_id = ?
+                    """, (new_status, current_time, self.current_viewing_order_id))
+
+                    # คืนสต็อก
+                    cursor.execute("SELECT product_id, quantity FROM order_items WHERE order_id = ?", (self.current_viewing_order_id,))
+                    items_to_restore = cursor.fetchall()
+                    for pid, qty in items_to_restore:
+                        cursor.execute("UPDATE product SET stock = stock + ? WHERE id = ?", (qty, pid))
+                    print(f"Restored stock for Order #{self.current_viewing_order_id}")
+
+                else:
+                    # เปลี่ยนสถานะปกติ
+                    cursor.execute("UPDATE orders SET status = ? WHERE order_id = ?", (new_status, self.current_viewing_order_id))
+
+                conn.commit()
+                conn.close()
+
+                QMessageBox.information(self, "Success", f"Status changed to '{new_status}'.")
+                self.load_order_details(self.current_viewing_order_id)
+
+            except Exception as e:
+                print(f"Error updating status: {e}")
+                QMessageBox.warning(self, "Error", f"Could not update status: {e}")
+
+
+
+
+
+    def handle_view_slip_image_admin(self):
+        # ฟังก์ชันสำหรับดูสลิป (เหมือนของ User แต่ปรับปรุงเล็กน้อย)
+        if not hasattr(self, 'current_slip_path_admin') or not self.current_slip_path_admin:
+             QMessageBox.information(self, "No Slip", "คำสั่งซื้อนี้ไม่มีการแนบรูปภาพสลิป")
+             return
+
+        image_path = self.current_slip_path_admin
+        if os.path.exists(image_path):
+            if os.name == 'nt':
+                os.startfile(image_path)
+            else:
+                import subprocess
+                opener = 'open' if sys.platform == 'darwin' else 'xdg-open'
+                subprocess.call([opener, image_path])
+        else:
+            QMessageBox.warning(self, "File Not Found", f"ไม่พบไฟล์รูปภาพที่:\n{image_path}")
+    
+    
+    
+    
     def create_profile_page(self):
         profile_frame = QFrame()
         profile_frame.setObjectName("ProfilePage") 
