@@ -74,13 +74,15 @@ class MainAdminWindow(QMainWindow):
         self.add_comic_sidebar = self.create_add_comic_sidebar()
         self.orders_sidebar = self.create_orders_sidebar()
         self.order_details_sidebar = self.create_order_details_sidebar()
+        self.sales_sidebar = self.create_sales_sidebar() # [NEW]
         
-        self.sidebar_stack.addWidget(self.browse_sidebar)     # Index 0
-        self.sidebar_stack.addWidget(self.profile_sidebar)    # Index 1
-        self.sidebar_stack.addWidget(self.detail_sidebar)     # Index 2
-        self.sidebar_stack.addWidget(self.add_comic_sidebar)  # Index 3
-        self.sidebar_stack.addWidget(self.orders_sidebar)        # Index 4
+        self.sidebar_stack.addWidget(self.browse_sidebar)       # Index 0
+        self.sidebar_stack.addWidget(self.profile_sidebar)      # Index 1
+        self.sidebar_stack.addWidget(self.detail_sidebar)       # Index 2
+        self.sidebar_stack.addWidget(self.add_comic_sidebar)    # Index 3
+        self.sidebar_stack.addWidget(self.orders_sidebar)       # Index 4
         self.sidebar_stack.addWidget(self.order_details_sidebar) # Index 5
+        self.sidebar_stack.addWidget(self.sales_sidebar)         # Index 6 [NEW]
         
         self.body_layout.addWidget(self.sidebar_stack) 
 
@@ -91,6 +93,7 @@ class MainAdminWindow(QMainWindow):
         self.add_comic_page = self.create_add_comic_page()
         self.orders_page = self.create_orders_page()
         self.order_details_page = self.create_order_details_page()
+        self.sales_page = self.create_sales_page() # [NEW]
 
         self.main_content_stack.addWidget(self.browse_page)         # Index 0
         self.main_content_stack.addWidget(self.profile_page)        # Index 1
@@ -98,6 +101,7 @@ class MainAdminWindow(QMainWindow):
         self.main_content_stack.addWidget(self.add_comic_page)      # Index 3
         self.main_content_stack.addWidget(self.orders_page)         # Index 4
         self.main_content_stack.addWidget(self.order_details_page)  # Index 5
+        self.main_content_stack.addWidget(self.sales_page)          # Index 6 [NEW]
         
         self.body_layout.addWidget(self.main_content_stack, 1)
 
@@ -138,15 +142,12 @@ class MainAdminWindow(QMainWindow):
         
         # --- แถวที่ 0 ---
         # (คอลัมน์ 0: Manage Account)
-        self.btn_manage_account = QPushButton("Manage Account")
-        self.btn_manage_account.setObjectName("navButton")
-        self.btn_manage_account.setFixedSize(button_width, button_height)
-        right_grid.addWidget(self.btn_manage_account, 0, 0)
 
         # (คอลัมน์ 1: Sales Summary)
         self.btn_sales_summary = QPushButton("Sales Summary")
         self.btn_sales_summary.setObjectName("navButton")
         self.btn_sales_summary.setFixedSize(button_width, button_height)
+        self.btn_sales_summary.clicked.connect(self.show_sales_page) # [EDITED]
         right_grid.addWidget(self.btn_sales_summary, 0, 1)
 
 
@@ -199,8 +200,8 @@ class MainAdminWindow(QMainWindow):
     def open_feedback_window(self):
         # ตรวจสอบว่าคลาส InfoWindow ถูก import มาสำเร็จหรือไม่
         if feedbackWindow is None:
-             QMessageBox.warning(self, "Error", "ไม่พบไฟล์ feedback_window.py")
-             return
+              QMessageBox.warning(self, "Error", "ไม่พบไฟล์ feedback_window.py")
+              return
 
         # ส่ง self (ตัวหน้าต่าง MainUserWindow นี้) ไปด้วย เพื่อให้ InfoWindow เรียกกลับมาได้
         self.feedback_window_instance = feedbackWindow(user_id=self.current_username, parent_window=self)
@@ -327,7 +328,67 @@ class MainAdminWindow(QMainWindow):
         
         sidebar_layout.addStretch()
         return sidebar_frame
+        
+    # --- [NEW] SIDEBAR FOR SALES SUMMARY ---
+    # --- [NEW] SIDEBAR FOR SALES SUMMARY ---
+    def create_sales_sidebar(self):
+        sidebar_frame = QFrame()
+        sidebar_frame.setObjectName("Sidebar")
+        sidebar_layout = QVBoxLayout(sidebar_frame)
+        sidebar_layout.setContentsMargins(20, 30, 20, 20)
+        sidebar_layout.setSpacing(25)
+        sidebar_layout.setAlignment(Qt.AlignmentFlag.AlignTop)
 
+        button_height = 55
+
+        # 1. Daily Sales
+        btn_daily_sales = QPushButton("Daily Sales")
+        btn_daily_sales.setObjectName("sidebarButton") 
+        btn_daily_sales.setFixedHeight(button_height)
+        btn_daily_sales.clicked.connect(self.show_daily_sales_view)
+        sidebar_layout.addWidget(btn_daily_sales)
+
+        # 2. Monthly Sales
+        btn_monthly_sales = QPushButton("Monthly Sales")
+        btn_monthly_sales.setObjectName("sidebarButton")
+        btn_monthly_sales.setFixedHeight(button_height)
+        btn_monthly_sales.clicked.connect(self.show_monthly_sales_view) 
+        sidebar_layout.addWidget(btn_monthly_sales)
+
+        # 3. Yearly Sales
+        btn_yearly_sales = QPushButton("Yearly Sales")
+        btn_yearly_sales.setObjectName("sidebarButton")
+        btn_yearly_sales.setFixedHeight(button_height)
+        btn_yearly_sales.clicked.connect(self.show_yearly_sales_view) 
+        sidebar_layout.addWidget(btn_yearly_sales)
+
+        # --- [EDITED] 4. All-Time Sales (ย้ายมาตำแหน่งนี้) ---
+        btn_all_time_sales = QPushButton("All-Time Sales")
+        btn_all_time_sales.setObjectName("sidebarButton")
+        btn_all_time_sales.setFixedHeight(button_height)
+        btn_all_time_sales.clicked.connect(self.show_all_time_sales_view)
+        sidebar_layout.addWidget(btn_all_time_sales)
+        # ----------------------------------------------------
+
+        # 5. Bestseller
+        btn_bestseller = QPushButton("Bestseller")
+        btn_bestseller.setObjectName("sidebarButton")
+        btn_bestseller.setFixedHeight(button_height)
+        # --- [EDITED] แก้ไขบรรทัดนี้ ---
+        btn_bestseller.clicked.connect(self.show_bestseller_view) 
+        # -------------------------------
+        sidebar_layout.addWidget(btn_bestseller)
+        
+        # 6. Back
+        btn_back = QPushButton("Back")
+        btn_back.setObjectName("backsidebarButton")
+        btn_back.setFixedHeight(button_height)
+        btn_back.clicked.connect(self.show_browse_page)
+        sidebar_layout.addWidget(btn_back)
+        
+        sidebar_layout.addStretch()
+        return sidebar_frame
+    
     def create_add_comic_page(self):
         add_comic_frame = QFrame()
         add_comic_frame.setObjectName("AddComicPage") 
@@ -492,6 +553,986 @@ class MainAdminWindow(QMainWindow):
         main_layout.addWidget(scroll_area, stretch=1)
         
         return main_content_frame
+        
+    # --- [NEW] SALES SUMMARY PAGE (Container) ---
+    # --- [NEW] SALES SUMMARY PAGE (Container) ---
+    def create_sales_page(self):
+        page_frame = QWidget()
+        main_layout = QVBoxLayout(page_frame)
+        main_layout.setContentsMargins(0, 0, 0, 0) # ชิดขอบ
+        main_layout.setSpacing(0)
+        
+        # สร้าง StackedWidget ภายในสำหรับสลับหน้า Daily, Monthly, etc.
+        self.sales_content_stack = QStackedWidget()
+        
+        # สร้างหน้า Daily Sales
+        self.daily_sales_page = self.create_daily_sales_page()
+        self.sales_content_stack.addWidget(self.daily_sales_page) # Index 0
+        
+        self.monthly_sales_page = self.create_monthly_sales_page()
+        self.sales_content_stack.addWidget(self.monthly_sales_page) # Index 1
+
+        self.yearly_sales_page = self.create_yearly_sales_page()
+        self.sales_content_stack.addWidget(self.yearly_sales_page) # Index 2
+        
+        # --- [NEW] เพิ่มหน้า All-Time ---
+        self.all_time_sales_page = self.create_all_time_sales_page()
+        self.sales_content_stack.addWidget(self.all_time_sales_page) # Index 3
+        # -------------------------------
+        
+        # --- [NEW] เพิ่มหน้า Bestseller ---
+        self.bestseller_page = self.create_bestseller_page()
+        self.sales_content_stack.addWidget(self.bestseller_page) # Index 4
+        # ----------------------------------
+        
+        main_layout.addWidget(self.sales_content_stack)
+        return page_frame
+
+    # --- [NEW] DAILY SALES PAGE (UI) ---
+    def create_daily_sales_page(self):
+        page_frame = QFrame()
+        # ตั้งชื่อ ObjectName ให้ตรงกับ QSS ในรูป (Orders.jpg)
+        page_frame.setObjectName("MainContent") # ใช้ชื่อเดียวกับ Browse Page เพื่อให้ได้พื้นหลังสีอ่อน
+        
+        main_layout = QVBoxLayout(page_frame)
+        # ตั้งค่า Margins ให้มีพื้นที่ว่างรอบข้าง
+        main_layout.setContentsMargins(300, 40, 50, 40)
+        main_layout.setSpacing(20)
+        main_layout.setAlignment(Qt.AlignmentFlag.AlignTop) # จัดชิดบน
+
+        # Frame สีครีมตรงกลางตามภาพ
+        content_frame = QFrame()
+        content_frame.setObjectName("salesReportFrame") # ตั้งชื่อเฉพาะสำหรับ QSS
+        content_layout = QVBoxLayout(content_frame)
+        content_layout.setContentsMargins(40, 30, 40, 30)
+        content_layout.setSpacing(15)
+        
+        # --- 1. Title ---
+        title_label = QLabel("Daily Sales")
+        title_label.setObjectName("salesReportTitle") # ตั้งชื่อเฉพาะสำหรับ QSS
+        title_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        content_layout.addWidget(title_label)
+        
+        content_layout.addSpacing(20)
+
+        # --- 2. Results Area ---
+        results_layout = QFormLayout()
+        results_layout.setSpacing(10)
+        results_layout.setLabelAlignment(Qt.AlignmentFlag.AlignLeft)
+
+        total_amount_label = QLabel("Details :")
+        total_amount_label.setObjectName("salesReportHeader")
+        
+        self.sales_orders_label = QLabel("0 orders")
+        self.sales_orders_label.setObjectName("salesReportValue")
+        
+        self.sales_quantity_label = QLabel("0 books")
+        self.sales_quantity_label.setObjectName("salesReportValue")
+        
+        self.sales_total_label = QLabel("0.00 THB")
+        self.sales_total_label.setObjectName("salesReportTotalValue")
+
+        # เพิ่มแถวข้อมูล
+        results_layout.addRow(total_amount_label)
+        orders_label = QLabel("orders:")
+        orders_label.setObjectName("salesReportLabelText") # เพิ่ม ObjectName
+        results_layout.addRow(orders_label, self.sales_orders_label)
+
+        quantity_label = QLabel("quantity:")
+        quantity_label.setObjectName("salesReportLabelText") # เพิ่ม ObjectName
+        results_layout.addRow(quantity_label, self.sales_quantity_label)
+        
+        content_layout.addLayout(results_layout)
+        content_layout.addSpacing(10)
+        
+        # เส้นคั่น
+        line = QFrame()
+        line.setFrameShape(QFrame.Shape.HLine)
+        line.setFrameShadow(QFrame.Shadow.Sunken)
+        content_layout.addWidget(line)
+        content_layout.addSpacing(10)
+
+        # แถว Total
+        total_layout = QHBoxLayout()
+        total_label_text = QLabel("Total :")
+        total_label_text.setObjectName("salesReportTotalLabel")
+        total_layout.addWidget(total_label_text)
+        total_layout.addWidget(self.sales_total_label)
+        total_layout.addStretch(1)
+        content_layout.addLayout(total_layout)
+        
+        content_layout.addStretch(1) # ดันส่วนล่างลงไป
+
+        # --- 3. Date Input Area ---
+        date_input_layout = QHBoxLayout()
+        date_input_layout.setSpacing(10)
+        date_input_layout.setAlignment(Qt.AlignmentFlag.AlignLeft)
+
+        # Days
+        days_label = QLabel("Days")
+        days_label.setObjectName("salesDateLabel")
+        date_input_layout.addWidget(days_label)
+        self.sales_day_input = QComboBox()
+        self.sales_day_input.setObjectName("salesDateInput")
+        self.sales_day_input.setFixedWidth(60)
+        self.sales_day_input.addItems([str(i) for i in range(1, 32)])  # 1-31
+        date_input_layout.addWidget(self.sales_day_input)
+
+        # Months
+        months_label = QLabel("Months")
+        months_label.setObjectName("salesDateLabel")
+        date_input_layout.addWidget(months_label)
+        self.sales_month_input = QComboBox()
+        self.sales_month_input.setObjectName("salesDateInput")
+        self.sales_month_input.setFixedWidth(60)
+        self.sales_month_input.addItems([str(i) for i in range(1, 13)])  # 1-12
+        date_input_layout.addWidget(self.sales_month_input)
+
+        # Years
+        years_label = QLabel("Years")
+        years_label.setObjectName("salesDateLabel") # <--- ตั้งชื่อเฉพาะ
+        date_input_layout.addWidget(years_label)
+        # date_input_layout.setObjectName("salesDateInputLayout") # ไม่จำเป็นต้องทำแบบนี้กับ layout
+        self.sales_year_input = QLineEdit()
+        self.sales_year_input.setObjectName("salesDateInput")
+        self.sales_year_input.setFixedWidth(80)
+        date_input_layout.addWidget(self.sales_year_input)
+
+        date_input_layout.addSpacing(10)
+
+        self.sales_apply_button = QPushButton("apply")
+        self.sales_apply_button.setObjectName("salesApplyButton")
+        self.sales_apply_button.setFixedSize(80, 35)
+        self.sales_apply_button.clicked.connect(self.calculate_daily_sales)
+        date_input_layout.addWidget(self.sales_apply_button)
+        
+        date_input_layout.addStretch()
+
+        content_layout.addLayout(date_input_layout)
+        
+        # เพิ่ม content_frame ลงใน main_layout
+        main_layout.addWidget(content_frame)
+        main_layout.addStretch() # ดัน Frame ขึ้นบน
+
+        return page_frame
+
+    # --- [NEW] LOGIC FOR DAILY SALES ---
+    # --- [NEW] LOGIC FOR DAILY SALES ---
+    def calculate_daily_sales(self):
+        try:
+            day = int(self.sales_day_input.currentText())
+            month = int(self.sales_month_input.currentText())
+            year = int(self.sales_year_input.text())
+            
+            selected_date = datetime(year, month, day)
+            
+            # [EDITED] สร้างสตริงวันที่ทั้ง 2 รูปแบบ
+            # รูปแบบที่ 1: 'YYYY-MM-DD' (สำหรับฟังก์ชัน DATE())
+            date_sql_format = selected_date.strftime("%Y-%m-%d")
+            # รูปแบบที่ 2: 'DD-Mon-YYYY' (สำหรับ LIKE)
+            date_custom_format = selected_date.strftime("%d-%b-%Y") # เช่น '11-Nov-2025'
+            
+        except ValueError:
+            QMessageBox.warning(self, "Invalid Date", "Please enter valid numbers for Day, Month, and Year.")
+            self.sales_orders_label.setText("Invalid Date")
+            self.sales_quantity_label.setText("Invalid Date")
+            self.sales_total_label.setText("Invalid Date")
+            return
+        except Exception as e:
+            QMessageBox.warning(self, "Date Error", f"An error occurred with the date: {e}")
+            return
+            
+        try:
+            conn = sqlite3.connect(DB_PATH)
+            cursor = conn.cursor()
+            
+            # --- [EDITED] แก้ไข Query ทั้ง 3 ส่วน ---
+
+            # Query 1: นับจำนวนออเดอร์ (orders) ที่ "มีสินค้า"
+            cursor.execute("""
+                SELECT
+                    COUNT(DISTINCT oi.order_id)
+                FROM
+                    order_items oi
+                JOIN
+                    orders o ON oi.order_id = o.order_id
+                WHERE
+                    (DATE(o.order_date) = ? OR o.order_date LIKE ?)
+                    AND o.status != 'cancelled' -- <--- [KEPT] คงไว้ตามที่ขอ
+                    AND o.status IN ('paid', 'dispatched') -- <--- [ADDED] เพิ่มเงื่อนไข
+            """, (date_sql_format, f"{date_custom_format}%"))
+            
+            order_data = cursor.fetchone()
+            num_orders = order_data[0] if order_data[0] is not None else 0
+
+            # Query 2: นับจำนวนสินค้า (quantity)
+            cursor.execute("""
+                SELECT
+                    SUM(oi.quantity)
+                FROM
+                    order_items oi
+                JOIN
+                    orders o ON oi.order_id = o.order_id
+                WHERE
+                    (DATE(o.order_date) = ? OR o.order_date LIKE ?)
+                    AND o.status != 'cancelled' -- <--- [KEPT] คงไว้ตามที่ขอ
+                    AND o.status IN ('paid', 'dispatched') -- <--- [ADDED] เพิ่มเงื่อนไข
+            """, (date_sql_format, f"{date_custom_format}%"))
+            
+            quantity_data = cursor.fetchone()
+            total_quantity = quantity_data[0] if quantity_data[0] is not None else 0
+            
+            # Query 3: หายอดรวม (Total THB) 
+            cursor.execute("""
+                SELECT
+                    SUM(total)
+                FROM
+                    orders
+                WHERE
+                    (DATE(order_date) = ? OR order_date LIKE ?)
+                    AND status != 'cancelled' -- <--- [KEPT] คงไว้ตามที่ขอ
+                    AND status IN ('paid', 'dispatched') -- <--- [ADDED] เพิ่มเงื่อนไข
+            """, (date_sql_format, f"{date_custom_format}%"))
+            
+            sales_data = cursor.fetchone()
+            total_sales = sales_data[0] if sales_data[0] is not None else 0.0
+            
+            conn.close()
+
+            # อัปเดตหน้า UI
+            self.sales_orders_label.setText(f"{num_orders} orders")
+            self.sales_quantity_label.setText(f"{total_quantity} books")
+            self.sales_total_label.setText(f"{total_sales:,.2f} THB")
+
+        except sqlite3.Error as e:
+            print(f"SQL Error: {e}")
+            QMessageBox.warning(self, "Database Error", f"Could not retrieve sales data: {e}")
+        except Exception as e:
+            print(f"Error calculating sales: {e}")
+            QMessageBox.warning(self, "Error", f"An unexpected error occurred: {e}")
+
+    # --- [NEW] FUNCTION TO SHOW SALES PAGE ---
+    def show_sales_page(self):
+        print("Showing Sales Summary Page")
+        self.sidebar_stack.setCurrentIndex(6)
+        self.main_content_stack.setCurrentIndex(6)
+        # แสดงหน้า Daily Sales เป็นค่าเริ่มต้น
+        self.show_daily_sales_view()
+        
+    def show_daily_sales_view(self):
+        print("Showing Daily Sales View")
+        # สลับ StackedWidget ภายในไปที่หน้า Daily (Index 0)
+        self.sales_content_stack.setCurrentIndex(0) 
+        
+        # --- [EDITED] ---
+        
+        # 1. ตั้งค่าวันที่ในช่องค้นหาเป็น "วันนี้"
+        today = datetime.now()
+        self.sales_day_input.setCurrentText(str(today.day))
+        self.sales_month_input.setCurrentText(str(today.month))
+        self.sales_year_input.setText(str(today.year))
+        
+        # 2. [เพิ่มบรรทัดนี้] เรียกใช้การคำนวณทันที
+        # เพื่อให้ยอดขายของ "วันนี้" แสดงผลเลย โดยไม่ต้องกด Apply
+        self.calculate_daily_sales()
+        
+    # --- [NEW] MONTHLY SALES PAGE (UI) ---
+    def create_monthly_sales_page(self):
+        page_frame = QFrame()
+        page_frame.setObjectName("MainContent")
+        
+        main_layout = QVBoxLayout(page_frame)
+        main_layout.setContentsMargins(300, 40, 50, 40)
+        main_layout.setSpacing(20)
+        main_layout.setAlignment(Qt.AlignmentFlag.AlignTop)
+
+        content_frame = QFrame()
+        content_frame.setObjectName("salesReportFrame")
+        content_layout = QVBoxLayout(content_frame)
+        content_layout.setContentsMargins(40, 30, 40, 30)
+        content_layout.setSpacing(15)
+        
+        # --- 1. Title ---
+        title_label = QLabel("Monthly Sales")
+        title_label.setObjectName("salesReportTitle")
+        title_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        content_layout.addWidget(title_label)
+        
+        content_layout.addSpacing(20)
+
+        # --- 2. Results Area ---
+        results_layout = QFormLayout()
+        results_layout.setSpacing(10)
+        results_layout.setLabelAlignment(Qt.AlignmentFlag.AlignLeft)
+
+        total_amount_label = QLabel("Details :")
+        total_amount_label.setObjectName("salesReportHeader")
+        
+        # สร้าง Label ใหม่สำหรับ Monthly
+        self.monthly_orders_label = QLabel("0 orders")
+        self.monthly_orders_label.setObjectName("salesReportValue")
+        
+        self.monthly_quantity_label = QLabel("0 books")
+        self.monthly_quantity_label.setObjectName("salesReportValue")
+        
+        self.monthly_total_label = QLabel("0.00 THB")
+        self.monthly_total_label.setObjectName("salesReportTotalValue")
+
+        results_layout.addRow(total_amount_label)
+        orders_label = QLabel("orders:")
+        orders_label.setObjectName("salesReportLabelText")
+        results_layout.addRow(orders_label, self.monthly_orders_label)
+
+        quantity_label = QLabel("quantity:")
+        quantity_label.setObjectName("salesReportLabelText")
+        results_layout.addRow(quantity_label, self.monthly_quantity_label)
+        
+        content_layout.addLayout(results_layout)
+        content_layout.addSpacing(10)
+        
+        line = QFrame()
+        line.setFrameShape(QFrame.Shape.HLine)
+        line.setFrameShadow(QFrame.Shadow.Sunken)
+        content_layout.addWidget(line)
+        content_layout.addSpacing(10)
+
+        total_layout = QHBoxLayout()
+        total_label_text = QLabel("Total :")
+        total_label_text.setObjectName("salesReportTotalLabel")
+        total_layout.addWidget(total_label_text)
+        total_layout.addWidget(self.monthly_total_label)
+        total_layout.addStretch(1)
+        content_layout.addLayout(total_layout)
+        
+        content_layout.addStretch(1)
+
+        # --- 3. Date Input Area (ตัด Day ออก) ---
+        date_input_layout = QHBoxLayout()
+        date_input_layout.setSpacing(10)
+        date_input_layout.setAlignment(Qt.AlignmentFlag.AlignLeft)
+
+        # Months
+        months_label = QLabel("Months")
+        months_label.setObjectName("salesDateLabel")
+        date_input_layout.addWidget(months_label)
+        self.monthly_month_input = QComboBox() # <--- ชื่อใหม่
+        self.monthly_month_input.setObjectName("salesDateInput")
+        self.monthly_month_input.setFixedWidth(60)
+        self.monthly_month_input.addItems([str(i) for i in range(1, 13)])
+        date_input_layout.addWidget(self.monthly_month_input)
+
+        # Years
+        years_label = QLabel("Years")
+        years_label.setObjectName("salesDateLabel")
+        date_input_layout.addWidget(years_label)
+        self.monthly_year_input = QLineEdit() # <--- ชื่อใหม่
+        self.monthly_year_input.setObjectName("salesDateInput")
+        self.monthly_year_input.setFixedWidth(80)
+        date_input_layout.addWidget(self.monthly_year_input)
+
+        date_input_layout.addSpacing(10)
+
+        self.monthly_apply_button = QPushButton("apply")
+        self.monthly_apply_button.setObjectName("salesApplyButton")
+        self.monthly_apply_button.setFixedSize(80, 35)
+        self.monthly_apply_button.clicked.connect(self.calculate_monthly_sales)
+        date_input_layout.addWidget(self.monthly_apply_button)
+        
+        date_input_layout.addStretch()
+        content_layout.addLayout(date_input_layout)
+        
+        main_layout.addWidget(content_frame)
+        main_layout.addStretch()
+
+        return page_frame
+
+    # --- [NEW] LOGIC FOR MONTHLY SALES ---
+    def calculate_monthly_sales(self):
+        try:
+            month = int(self.monthly_month_input.currentText())
+            year = int(self.monthly_year_input.text())
+            
+            # สร้าง Format สำหรับ Query
+            # 1. 'YYYY-MM' (สำหรับ strftime)
+            year_month_sql_format = f"{year}-{month:02d}"
+            # 2. '%-Mon-YYYY%' (สำหรับ LIKE)
+            month_abbr = datetime(year, month, 1).strftime('%b') # เช่น 'Nov'
+            like_format = f"%-{month_abbr}-{year}%" # เช่น '%-Nov-2025%'
+
+        except ValueError:
+            QMessageBox.warning(self, "Invalid Date", "Please enter a valid Year.")
+            self.monthly_orders_label.setText("Invalid Year")
+            self.monthly_quantity_label.setText("Invalid Year")
+            self.monthly_total_label.setText("Invalid Year")
+            return
+            
+        try:
+            conn = sqlite3.connect(DB_PATH)
+            cursor = conn.cursor()
+            
+            # --- [EDITED] แก้ไข Query ทั้ง 3 ส่วน ---
+            # ใช้ strftime('%Y-%m', o.order_date) และ LIKE
+
+            # Query 1: นับจำนวนออเดอร์
+            cursor.execute("""
+                SELECT COUNT(DISTINCT oi.order_id)
+                FROM order_items oi
+                JOIN orders o ON oi.order_id = o.order_id
+                WHERE
+                    (strftime('%Y-%m', o.order_date) = ? OR o.order_date LIKE ?)
+                    AND o.status IN ('paid', 'dispatched')
+            """, (year_month_sql_format, like_format))
+            
+            order_data = cursor.fetchone()
+            num_orders = order_data[0] if order_data[0] is not None else 0
+
+            # Query 2: นับจำนวนสินค้า
+            cursor.execute("""
+                SELECT SUM(oi.quantity)
+                FROM order_items oi
+                JOIN orders o ON oi.order_id = o.order_id
+                WHERE
+                    (strftime('%Y-%m', o.order_date) = ? OR o.order_date LIKE ?)
+                    AND o.status IN ('paid', 'dispatched')
+            """, (year_month_sql_format, like_format))
+            
+            quantity_data = cursor.fetchone()
+            total_quantity = quantity_data[0] if quantity_data[0] is not None else 0
+            
+            # Query 3: หายอดรวม
+            cursor.execute("""
+                SELECT SUM(total)
+                FROM orders
+                WHERE
+                    (strftime('%Y-%m', order_date) = ? OR order_date LIKE ?)
+                    AND status IN ('paid', 'dispatched')
+            """, (year_month_sql_format, like_format))
+            
+            sales_data = cursor.fetchone()
+            total_sales = sales_data[0] if sales_data[0] is not None else 0.0
+            
+            conn.close()
+
+            # อัปเดตหน้า UI (ใช้ Label ของ Monthly)
+            self.monthly_orders_label.setText(f"{num_orders} orders")
+            self.monthly_quantity_label.setText(f"{total_quantity} books")
+            self.monthly_total_label.setText(f"{total_sales:,.2f} THB")
+
+        except sqlite3.Error as e:
+            print(f"SQL Error: {e}")
+            QMessageBox.warning(self, "Database Error", f"Could not retrieve sales data: {e}")
+        except Exception as e:
+            print(f"Error calculating sales: {e}")
+            QMessageBox.warning(self, "Error", f"An unexpected error occurred: {e}")
+
+    # --- [NEW] FUNCTION TO SHOW MONTHLY SALES VIEW ---
+    def show_monthly_sales_view(self):
+        print("Showing Monthly Sales View")
+        self.sales_content_stack.setCurrentIndex(1) # <--- เปลี่ยน Index เป็น 1
+        
+        today = datetime.now()
+        self.monthly_month_input.setCurrentText(str(today.month))
+        self.monthly_year_input.setText(str(today.year))
+        
+        self.calculate_monthly_sales()
+
+
+    # --- [NEW] YEARLY SALES PAGE (UI) ---
+    def create_yearly_sales_page(self):
+        page_frame = QFrame()
+        page_frame.setObjectName("MainContent")
+        
+        main_layout = QVBoxLayout(page_frame)
+        main_layout.setContentsMargins(300, 40, 50, 40)
+        main_layout.setSpacing(20)
+        main_layout.setAlignment(Qt.AlignmentFlag.AlignTop)
+
+        content_frame = QFrame()
+        content_frame.setObjectName("salesReportFrame")
+        content_layout = QVBoxLayout(content_frame)
+        content_layout.setContentsMargins(40, 30, 40, 30)
+        content_layout.setSpacing(15)
+        
+        # --- 1. Title ---
+        title_label = QLabel("Yearly Sales")
+        title_label.setObjectName("salesReportTitle")
+        title_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        content_layout.addWidget(title_label)
+        
+        content_layout.addSpacing(20)
+
+        # --- 2. Results Area ---
+        results_layout = QFormLayout()
+        results_layout.setSpacing(10)
+        results_layout.setLabelAlignment(Qt.AlignmentFlag.AlignLeft)
+
+        total_amount_label = QLabel("Details :")
+        total_amount_label.setObjectName("salesReportHeader")
+        
+        # สร้าง Label ใหม่สำหรับ Yearly
+        self.yearly_orders_label = QLabel("0 orders")
+        self.yearly_orders_label.setObjectName("salesReportValue")
+        
+        self.yearly_quantity_label = QLabel("0 books")
+        self.yearly_quantity_label.setObjectName("salesReportValue")
+        
+        self.yearly_total_label = QLabel("0.00 THB")
+        self.yearly_total_label.setObjectName("salesReportTotalValue")
+
+        results_layout.addRow(total_amount_label)
+        orders_label = QLabel("orders:")
+        orders_label.setObjectName("salesReportLabelText")
+        results_layout.addRow(orders_label, self.yearly_orders_label)
+
+        quantity_label = QLabel("quantity:")
+        quantity_label.setObjectName("salesReportLabelText")
+        results_layout.addRow(quantity_label, self.yearly_quantity_label)
+        
+        content_layout.addLayout(results_layout)
+        content_layout.addSpacing(10)
+        
+        line = QFrame()
+        line.setFrameShape(QFrame.Shape.HLine)
+        line.setFrameShadow(QFrame.Shadow.Sunken)
+        content_layout.addWidget(line)
+        content_layout.addSpacing(10)
+
+        total_layout = QHBoxLayout()
+        total_label_text = QLabel("Total :")
+        total_label_text.setObjectName("salesReportTotalLabel")
+        total_layout.addWidget(total_label_text)
+        total_layout.addWidget(self.yearly_total_label)
+        total_layout.addStretch(1)
+        content_layout.addLayout(total_layout)
+        
+        content_layout.addStretch(1)
+
+        # --- 3. Date Input Area (ตัด Day และ Month ออก) ---
+        date_input_layout = QHBoxLayout()
+        date_input_layout.setSpacing(10)
+        date_input_layout.setAlignment(Qt.AlignmentFlag.AlignLeft)
+
+        # Years
+        years_label = QLabel("Years")
+        years_label.setObjectName("salesDateLabel")
+        date_input_layout.addWidget(years_label)
+        self.yearly_year_input = QLineEdit() # <--- ชื่อใหม่
+        self.yearly_year_input.setObjectName("salesDateInput")
+        self.yearly_year_input.setFixedWidth(80)
+        date_input_layout.addWidget(self.yearly_year_input)
+
+        date_input_layout.addSpacing(10)
+
+        self.yearly_apply_button = QPushButton("apply")
+        self.yearly_apply_button.setObjectName("salesApplyButton")
+        self.yearly_apply_button.setFixedSize(80, 35)
+        self.yearly_apply_button.clicked.connect(self.calculate_yearly_sales)
+        date_input_layout.addWidget(self.yearly_apply_button)
+        
+        date_input_layout.addStretch()
+        content_layout.addLayout(date_input_layout)
+        
+        main_layout.addWidget(content_frame)
+        main_layout.addStretch()
+
+        return page_frame
+
+    # --- [NEW] LOGIC FOR YEARLY SALES ---
+    def calculate_yearly_sales(self):
+        try:
+            year = int(self.yearly_year_input.text())
+            
+            # สร้าง Format สำหรับ Query
+            # 1. 'YYYY' (สำหรับ strftime)
+            year_sql_format = str(year)
+            # 2. '%-YYYY%' (สำหรับ LIKE)
+            like_format = f"%-{year}%" # เช่น '%-2025%'
+
+        except ValueError:
+            QMessageBox.warning(self, "Invalid Date", "Please enter a valid Year.")
+            self.yearly_orders_label.setText("Invalid Year")
+            self.yearly_quantity_label.setText("Invalid Year")
+            self.yearly_total_label.setText("Invalid Year")
+            return
+            
+        try:
+            conn = sqlite3.connect(DB_PATH)
+            cursor = conn.cursor()
+            
+            # --- [EDITED] แก้ไข Query ทั้ง 3 ส่วน ---
+            # ใช้ strftime('%Y', o.order_date) และ LIKE
+
+            # Query 1: นับจำนวนออเดอร์
+            cursor.execute("""
+                SELECT COUNT(DISTINCT oi.order_id)
+                FROM order_items oi
+                JOIN orders o ON oi.order_id = o.order_id
+                WHERE
+                    (strftime('%Y', o.order_date) = ? OR o.order_date LIKE ?)
+                    AND o.status IN ('paid', 'dispatched')
+            """, (year_sql_format, like_format))
+            
+            order_data = cursor.fetchone()
+            num_orders = order_data[0] if order_data[0] is not None else 0
+
+            # Query 2: นับจำนวนสินค้า
+            cursor.execute("""
+                SELECT SUM(oi.quantity)
+                FROM order_items oi
+                JOIN orders o ON oi.order_id = o.order_id
+                WHERE
+                    (strftime('%Y', o.order_date) = ? OR o.order_date LIKE ?)
+                    AND o.status IN ('paid', 'dispatched')
+            """, (year_sql_format, like_format))
+            
+            quantity_data = cursor.fetchone()
+            total_quantity = quantity_data[0] if quantity_data[0] is not None else 0
+            
+            # Query 3: หายอดรวม
+            cursor.execute("""
+                SELECT SUM(total)
+                FROM orders
+                WHERE
+                    (strftime('%Y', order_date) = ? OR order_date LIKE ?)
+                    AND status IN ('paid', 'dispatched')
+            """, (year_sql_format, like_format))
+            
+            sales_data = cursor.fetchone()
+            total_sales = sales_data[0] if sales_data[0] is not None else 0.0
+            
+            conn.close()
+
+            # อัปเดตหน้า UI (ใช้ Label ของ Yearly)
+            self.yearly_orders_label.setText(f"{num_orders} orders")
+            self.yearly_quantity_label.setText(f"{total_quantity} books")
+            self.yearly_total_label.setText(f"{total_sales:,.2f} THB")
+
+        except sqlite3.Error as e:
+            print(f"SQL Error: {e}")
+            QMessageBox.warning(self, "Database Error", f"Could not retrieve sales data: {e}")
+        except Exception as e:
+            print(f"Error calculating sales: {e}")
+            QMessageBox.warning(self, "Error", f"An unexpected error occurred: {e}")
+
+    # --- [NEW] FUNCTION TO SHOW YEARLY SALES VIEW ---
+    def show_yearly_sales_view(self):
+        print("Showing Yearly Sales View")
+        self.sales_content_stack.setCurrentIndex(2) # <--- เปลี่ยน Index เป็น 2
+        
+        today = datetime.now()
+        self.yearly_year_input.setText(str(today.year))
+        
+        self.calculate_yearly_sales()
+
+    # --- [NEW] ALL-TIME SALES PAGE (UI) ---
+    def create_all_time_sales_page(self):
+        page_frame = QFrame()
+        page_frame.setObjectName("MainContent")
+        
+        main_layout = QVBoxLayout(page_frame)
+        main_layout.setContentsMargins(300, 40, 50, 40)
+        main_layout.setSpacing(20)
+        main_layout.setAlignment(Qt.AlignmentFlag.AlignTop)
+
+        content_frame = QFrame()
+        content_frame.setObjectName("salesReportFrame")
+        content_layout = QVBoxLayout(content_frame)
+        content_layout.setContentsMargins(40, 30, 40, 30)
+        content_layout.setSpacing(15)
+        
+        # --- 1. Title ---
+        title_label = QLabel("All-Time Sales")
+        title_label.setObjectName("salesReportTitle")
+        title_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        content_layout.addWidget(title_label)
+        
+        content_layout.addSpacing(20)
+
+        # --- 2. Results Area ---
+        results_layout = QFormLayout()
+        results_layout.setSpacing(10)
+        results_layout.setLabelAlignment(Qt.AlignmentFlag.AlignLeft)
+
+        total_amount_label = QLabel("Details (All-Time) :")
+        total_amount_label.setObjectName("salesReportHeader")
+        
+        # สร้าง Label ใหม่สำหรับ All-Time
+        self.all_time_orders_label = QLabel("0 orders")
+        self.all_time_orders_label.setObjectName("salesReportValue")
+        
+        self.all_time_quantity_label = QLabel("0 books")
+        self.all_time_quantity_label.setObjectName("salesReportValue")
+        
+        self.all_time_total_label = QLabel("0.00 THB")
+        self.all_time_total_label.setObjectName("salesReportTotalValue")
+
+        results_layout.addRow(total_amount_label)
+        orders_label = QLabel("orders:")
+        orders_label.setObjectName("salesReportLabelText")
+        results_layout.addRow(orders_label, self.all_time_orders_label)
+
+        quantity_label = QLabel("quantity:")
+        quantity_label.setObjectName("salesReportLabelText")
+        results_layout.addRow(quantity_label, self.all_time_quantity_label)
+        
+        content_layout.addLayout(results_layout)
+        content_layout.addSpacing(10)
+        
+        line = QFrame()
+        line.setFrameShape(QFrame.Shape.HLine)
+        line.setFrameShadow(QFrame.Shadow.Sunken)
+        content_layout.addWidget(line)
+        content_layout.addSpacing(10)
+
+        total_layout = QHBoxLayout()
+        total_label_text = QLabel("Total :")
+        total_label_text.setObjectName("salesReportTotalLabel")
+        total_layout.addWidget(total_label_text)
+        total_layout.addWidget(self.all_time_total_label)
+        total_layout.addStretch(1)
+        content_layout.addLayout(total_layout)
+        
+        content_layout.addStretch(1)
+
+        # --- 3. ไม่มี Date Input Area ---
+        # (ลบส่วนนี้ออกไปเลย)
+        
+        main_layout.addWidget(content_frame)
+        main_layout.addStretch()
+
+        return page_frame
+
+    # --- [NEW] LOGIC FOR ALL-TIME SALES ---
+    def calculate_all_time_sales(self):
+        # ไม่มีการ parse date เพราะเป็นการรวมยอดทั้งหมด
+        try:
+            conn = sqlite3.connect(DB_PATH)
+            cursor = conn.cursor()
+            
+            # --- [EDITED] แก้ไข Query ทั้ง 3 ส่วน ---
+            # (ตัด WHERE ที่เกี่ยวกับวันที่ออกทั้งหมด)
+
+            # Query 1: นับจำนวนออเดอร์
+            cursor.execute("""
+                SELECT COUNT(DISTINCT oi.order_id)
+                FROM order_items oi
+                JOIN orders o ON oi.order_id = o.order_id
+                WHERE
+                    o.status IN ('paid', 'dispatched')
+            """)
+            
+            order_data = cursor.fetchone()
+            num_orders = order_data[0] if order_data[0] is not None else 0
+
+            # Query 2: นับจำนวนสินค้า
+            cursor.execute("""
+                SELECT SUM(oi.quantity)
+                FROM order_items oi
+                JOIN orders o ON oi.order_id = o.order_id
+                WHERE
+                    o.status IN ('paid', 'dispatched')
+            """)
+            
+            quantity_data = cursor.fetchone()
+            total_quantity = quantity_data[0] if quantity_data[0] is not None else 0
+            
+            # Query 3: หายอดรวม
+            cursor.execute("""
+                SELECT SUM(total)
+                FROM orders
+                WHERE
+                    status IN ('paid', 'dispatched')
+            """)
+            
+            sales_data = cursor.fetchone()
+            total_sales = sales_data[0] if sales_data[0] is not None else 0.0
+            
+            conn.close()
+
+            # อัปเดตหน้า UI (ใช้ Label ของ All-Time)
+            self.all_time_orders_label.setText(f"{num_orders} orders")
+            self.all_time_quantity_label.setText(f"{total_quantity} books")
+            self.all_time_total_label.setText(f"{total_sales:,.2f} THB")
+
+        except sqlite3.Error as e:
+            print(f"SQL Error: {e}")
+            QMessageBox.warning(self, "Database Error", f"Could not retrieve sales data: {e}")
+        except Exception as e:
+            print(f"Error calculating sales: {e}")
+            QMessageBox.warning(self, "Error", f"An unexpected error occurred: {e}")
+
+    # --- [NEW] FUNCTION TO SHOW ALL-TIME SALES VIEW ---
+    def show_all_time_sales_view(self):
+        print("Showing All-Time Sales View")
+        self.sales_content_stack.setCurrentIndex(3) # <--- เปลี่ยน Index เป็น 3
+        
+        # ไม่ต้องตั้งค่าวันที่
+        
+        self.calculate_all_time_sales()
+
+    # --- [NEW] BESTSELLER PAGE (UI) ---
+    def create_bestseller_page(self):
+        page_frame = QFrame()
+        page_frame.setObjectName("MainContent") # ใช้พื้นหลังเดียวกับหน้า Browse
+        
+        main_layout = QVBoxLayout(page_frame)
+        main_layout.setContentsMargins(300, 40, 50, 40) # ปรับ Margins ตามความเหมาะสม
+        main_layout.setSpacing(20)
+        main_layout.setAlignment(Qt.AlignmentFlag.AlignTop)
+
+        # --- ส่วน Filter ---
+        filter_layout = QHBoxLayout()
+        filter_layout.setSpacing(10)
+        
+        category_label = QLabel("Filter by Category:")
+        category_label.setObjectName("salesDateLabel") # ใช้สไตล์เดียวกับ Label อื่น
+        
+        self.bestseller_category_combo = QComboBox()
+        self.bestseller_category_combo.setObjectName("salesDateInput") # ใช้สไตล์เดียวกับ ComboBox อื่น
+        self.bestseller_category_combo.addItems(["ALL", "MARVEL", "DC", "Image Comics"])
+        self.bestseller_category_combo.setFixedWidth(150)
+        # เชื่อม Signal เมื่อมีการเปลี่ยนแปลง
+        self.bestseller_category_combo.currentTextChanged.connect(self.load_bestseller_data)
+
+        filter_layout.addWidget(category_label)
+        filter_layout.addWidget(self.bestseller_category_combo)
+        filter_layout.addStretch()
+        
+        main_layout.addLayout(filter_layout)
+
+        # --- ตาราง Bestseller ---
+        self.bestseller_table = QTableWidget()
+        self.bestseller_table.setObjectName("ordersTable") # ใช้สไตล์เดียวกับตาราง Order
+        self.bestseller_table.setColumnCount(4)
+        self.bestseller_table.setHorizontalHeaderLabels(["NO.", "ITEM", "Category", "Quantity"])
+        
+        header = self.bestseller_table.horizontalHeader()
+        header.setSectionResizeMode(0, QHeaderView.ResizeMode.Fixed) # NO.
+        header.setSectionResizeMode(1, QHeaderView.ResizeMode.Stretch) # ITEM
+        header.setSectionResizeMode(2, QHeaderView.ResizeMode.ResizeToContents) # Category
+        header.setSectionResizeMode(3, QHeaderView.ResizeMode.ResizeToContents) # Quantity
+        
+        self.bestseller_table.setColumnWidth(0, 50) # NO.
+        
+        self.bestseller_table.verticalHeader().setVisible(False)
+        self.bestseller_table.setSelectionMode(QAbstractItemView.SelectionMode.NoSelection)
+        self.bestseller_table.setFocusPolicy(Qt.FocusPolicy.NoFocus)
+        self.bestseller_table.setShowGrid(True)
+        
+        main_layout.addWidget(self.bestseller_table, 1) # ให้ตารางยืดขยาย
+
+        return page_frame
+    
+    # --- [NEW] LOGIC FOR BESTSELLER (แก้ไข) ---
+    def load_bestseller_data(self):
+        self.bestseller_table.setRowCount(0)
+        
+        try:
+            conn = sqlite3.connect(DB_PATH)
+            cursor = conn.cursor()
+
+            selected_category = self.bestseller_category_combo.currentText()
+            
+            # 1. สร้าง Query หลัก
+            base_query = """
+                SELECT 
+                    p.id, 
+                    p.name, 
+                    p.cover_img, 
+                    p.category, 
+                    SUM(oi.quantity) as total_sold
+                FROM 
+                    order_items oi
+                JOIN 
+                    orders o ON oi.order_id = o.order_id
+                JOIN 
+                    product p ON oi.product_id = p.id
+                WHERE 
+                    o.status IN ('paid', 'dispatched') 
+            """ # <-- [!!! EDITED !!!] แก้ไขจุดนี้
+            
+            params = []
+            
+            # 2. เพิ่มเงื่อนไข Category ถ้าไม่ได้เลือก "ALL"
+            if selected_category != "ALL":
+                base_query += " AND p.category = ? "
+                params.append(selected_category)
+                
+            # 3. GROUP BY และ ORDER BY
+            base_query += """
+                GROUP BY 
+                    p.id, p.name, p.cover_img, p.category
+                ORDER BY 
+                    total_sold DESC
+            """
+            
+            cursor.execute(base_query, params)
+            results = cursor.fetchall()
+            conn.close()
+            
+            # 4. แสดงผลลัพธ์ในตาราง (ส่วนนี้เหมือนเดิม)
+            self.bestseller_table.setRowCount(len(results))
+            for i, (p_id, p_name, p_img, p_cat, total_sold) in enumerate(results):
+                
+                # --- Column 0: NO. ---
+                num_item = QTableWidgetItem(str(i + 1))
+                num_item.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
+                self.bestseller_table.setItem(i, 0, num_item)
+
+                # --- Column 1: ITEM (Image + Name) ---
+                item_widget = QWidget()
+                item_layout = QHBoxLayout(item_widget)
+                item_layout.setContentsMargins(5, 5, 5, 5)
+                
+                img_label = QLabel()
+                img_label.setFixedSize(60, 90) # ขนาดรูป
+                img_label.setScaledContents(True)
+                
+                if p_img and os.path.exists(p_img):
+                    img_label.setPixmap(QPixmap(p_img))
+                else:
+                    img_label.setPixmap(QPixmap("src/img/icon/profile.png")) # รูปสำรอง
+                
+                name_label = QLabel(p_name)
+                name_label.setWordWrap(True)
+                name_label.setObjectName("bestsellerItemName") # ใช้สไตล์เดียวกับตารางอื่น
+                
+                item_layout.addWidget(img_label)
+                item_layout.addWidget(name_label, 1) # ให้ชื่อยืดได้
+                self.bestseller_table.setCellWidget(i, 1, item_widget)
+                
+                # --- Column 2: Category ---
+                cat_item = QTableWidgetItem(p_cat)
+                cat_item.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
+                self.bestseller_table.setItem(i, 2, cat_item)
+                
+                # --- Column 3: Quantity ---
+                qty_item = QTableWidgetItem(str(total_sold))
+                qty_item.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
+                self.bestseller_table.setItem(i, 3, qty_item)
+                
+                # ตั้งค่าความสูงของแถว
+                self.bestseller_table.setRowHeight(i, 100)
+
+        except sqlite3.Error as e:
+            print(f"SQL Error: {e}")
+            QMessageBox.warning(self, "Database Error", f"Could not retrieve bestseller data: {e}")
+        except Exception as e:
+            print(f"Error loading bestseller data: {e}")
+
+    # --- [NEW] FUNCTION TO SHOW BESTSELLER VIEW ---
+    def show_bestseller_view(self):
+        print("Showing Bestseller View")
+        self.sales_content_stack.setCurrentIndex(4) # <--- Index 4 (เดี๋ยวเราจะเพิ่มใน create_sales_page)
+        
+        # ตั้งค่า Filter เป็น "ALL" ก่อนเสมอ
+        self.bestseller_category_combo.setCurrentText("ALL")
+        
+        # โหลดข้อมูล (การตั้งค่า ComboBox ด้านบนจะ trigger signal นี้อยู่แล้ว
+        # แต่เพื่อความแน่นอน, เราเรียกเองก็ได้)
+        self.load_bestseller_data()
+
+
 
     def on_search_text_changed(self, text):
         self.current_search_term = text.strip()
@@ -711,7 +1752,7 @@ class MainAdminWindow(QMainWindow):
         right_info_layout.setSpacing(15)
         right_info_layout.setAlignment(Qt.AlignmentFlag.AlignTop | Qt.AlignmentFlag.AlignRight) 
 
-        self.detail_name_field = QTextEdit()           # <--- ใช้ QTextEdit แทน
+        self.detail_name_field = QTextEdit()         # <--- ใช้ QTextEdit แทน
         self.detail_name_field.setObjectName("detailNameField")
         self.detail_name_field.setPlaceholderText("Product Name")
         self.detail_name_field.setFixedHeight(80)
@@ -750,7 +1791,7 @@ class MainAdminWindow(QMainWindow):
             self.detail_price_field
         ]
         for field in self.product_editable_fields:
-             field.setObjectName("detailValueField")
+            field.setObjectName("detailValueField")
 
         self.detail_price_field.setObjectName("detailPriceField") # แยกราคาออกมาเพื่อทำสีพิเศษ
 
@@ -933,8 +1974,8 @@ class MainAdminWindow(QMainWindow):
             img_path = self.detail_new_img_path if self.detail_new_img_path else self.current_detail_img_path
 
             if not all([new_id_str, name, stock_str, price_str]):
-                 QMessageBox.warning(self, "Missing Info", "Please fill in ID, Name, Stock, and Price.")
-                 return
+                QMessageBox.warning(self, "Missing Info", "Please fill in ID, Name, Stock, and Price.")
+                return
 
             new_id = int(new_id_str)
             stock = int(stock_str)
@@ -966,9 +2007,9 @@ class MainAdminWindow(QMainWindow):
             self.load_product_details(new_id) 
 
         except ValueError:
-             QMessageBox.warning(self, "Invalid Input", "ID and Stock must be integers, Price must be a number.")
+            QMessageBox.warning(self, "Invalid Input", "ID and Stock must be integers, Price must be a number.")
         except sqlite3.IntegrityError:
-             QMessageBox.warning(self, "Database Error", "ID might already exist or other constraint failed.")
+            QMessageBox.warning(self, "Database Error", "ID might already exist or other constraint failed.")
         except Exception as e:
             print(f"Error saving product: {e}")
             QMessageBox.warning(self, "Error", f"Could not save changes: {e}")
@@ -984,49 +2025,6 @@ class MainAdminWindow(QMainWindow):
             self.detail_cover_label.setPixmap(pixmap.scaled(
                 self.detail_cover_label.size(), Qt.AspectRatioMode.KeepAspectRatio, Qt.TransformationMode.SmoothTransformation
             ))
-
-    def save_product_changes(self):
-        """บันทึกการแก้ไขสินค้าลง Database"""
-        try:
-            # ดึงข้อมูลจากฟิลด์
-            name = self.detail_name_field.text().strip()
-            desc = self.detail_desc_field.toPlainText().strip()
-            volume = self.detail_volume_field.text().strip()
-            writer = self.detail_writer_field.text().strip()
-            rated = self.detail_rated_field.text().strip()
-            category = self.detail_category_field.currentText()
-            stock_str = self.detail_stock_field.text().strip()
-            price_str = self.detail_price_field.text().strip()
-            
-            # ใช้รูปใหม่ถ้ามีการอัปโหลด ถ้าไม่ใช้รูปเดิม
-            img_path = self.detail_new_img_path if self.detail_new_img_path else self.current_detail_img_path
-
-            # Validation พื้นฐาน
-            if not all([name, stock_str, price_str]):
-                 QMessageBox.warning(self, "Missing Info", "Please fill in Name, Stock, and Price.")
-                 return
-
-            stock = int(stock_str)
-            price = float(price_str)
-
-            conn = sqlite3.connect(DB_PATH)
-            cursor = conn.cursor()
-            cursor.execute("""
-                UPDATE product 
-                SET name=?, description=?, volume_issue=?, writer=?, rated=?, category=?, stock=?, price=?, cover_img=?
-                WHERE id=?
-            """, (name, desc, volume, writer, rated, category, stock, price, img_path, self.current_detail_product_id))
-            conn.commit()
-            conn.close()
-
-            QMessageBox.information(self, "Success", "Product updated successfully!")
-            self.load_product_details(self.current_detail_product_id) # โหลดข้อมูลใหม่และออกจากโหมดแก้ไข
-
-        except ValueError:
-             QMessageBox.warning(self, "Invalid Input", "Stock must be an integer and Price must be a number.")
-        except Exception as e:
-            print(f"Error saving product: {e}")
-            QMessageBox.warning(self, "Error", f"Could not save changes: {e}")
 
     def delete_product(self):
         """ลบสินค้าออกจาก Database"""
@@ -1052,9 +2050,9 @@ class MainAdminWindow(QMainWindow):
             except Exception as e:
                 print(f"Error deleting product: {e}")
                 QMessageBox.warning(self, "Error", f"Could not delete product: {e}")
-    
-    
-    
+        
+        
+        
     # --- [NEW] SIDEBARS FOR ORDERS ---
     def create_orders_sidebar(self):
         sidebar_frame = QFrame()
@@ -1193,11 +2191,11 @@ class MainAdminWindow(QMainWindow):
                 if status == 'pending':
                     status_item.setForeground(QBrush(QColor("#f39c12"))) # สีส้ม
                 elif status == 'paid':
-                     status_item.setForeground(QBrush(QColor("#2ecc71"))) # สีเขียว
+                    status_item.setForeground(QBrush(QColor("#2ecc71"))) # สีเขียว
                 elif status == 'cancelled':
-                     status_item.setForeground(QBrush(QColor("#ff0000"))) # สีเขียว
+                    status_item.setForeground(QBrush(QColor("#ff0000"))) # สีเขียว
                 elif status == 'dispatched':
-                     status_item.setForeground(QBrush(QColor("#1aff00"))) # สีเขียว
+                    status_item.setForeground(QBrush(QColor("#1aff00"))) # สีเขียว
 
                 # เก็บ order_id ไว้ใน UserData ของ cell นี้เพื่อใช้ตอนคลิก
                 status_item.setData(Qt.ItemDataRole.UserRole, order_id)
@@ -1290,7 +2288,7 @@ class MainAdminWindow(QMainWindow):
 
         for lbl in [self.cust_username_label, self.cust_firstname_label, self.cust_lastname_label,
                     self.cust_tel_label, self.cust_email_label, self.cust_address_label]:
-             lbl.setObjectName("customerInfoValue")
+            lbl.setObjectName("customerInfoValue")
 
         def form_lbl(text):
             l = QLabel(text)
@@ -1317,13 +2315,13 @@ class MainAdminWindow(QMainWindow):
         summary_layout.setSpacing(10)
 
         def create_summary_row(text, val_label_obj_name, is_total=False):
-             row = QWidget(); l = QHBoxLayout(row); l.setContentsMargins(0,0,0,0); l.setAlignment(Qt.AlignmentFlag.AlignRight)
-             lbl_t = QLabel(text); lbl_t.setObjectName("cartSummaryLabel"); lbl_t.setAlignment(Qt.AlignmentFlag.AlignRight)
-             lbl_v = QLabel("0.00 THB"); lbl_v.setObjectName(val_label_obj_name); lbl_v.setAlignment(Qt.AlignmentFlag.AlignRight)
-             if is_total: lbl_v.setMinimumWidth(200)
-             else: lbl_v.setFixedWidth(150)
-             l.addWidget(lbl_t); l.addWidget(lbl_v)
-             return row, lbl_v
+            row = QWidget(); l = QHBoxLayout(row); l.setContentsMargins(0,0,0,0); l.setAlignment(Qt.AlignmentFlag.AlignRight)
+            lbl_t = QLabel(text); lbl_t.setObjectName("cartSummaryLabel"); lbl_t.setAlignment(Qt.AlignmentFlag.AlignRight)
+            lbl_v = QLabel("0.00 THB"); lbl_v.setObjectName(val_label_obj_name); lbl_v.setAlignment(Qt.AlignmentFlag.AlignRight)
+            if is_total: lbl_v.setMinimumWidth(200)
+            else: lbl_v.setFixedWidth(150)
+            l.addWidget(lbl_t); l.addWidget(lbl_v)
+            return row, lbl_v
 
         row_sub, self.ord_subtotal_label = create_summary_row("Subtotal :", "cartSummaryValue")
         row_ship, self.ord_shipping_label = create_summary_row("Shipping :", "cartSummaryValue")
@@ -1466,6 +2464,7 @@ class MainAdminWindow(QMainWindow):
         self.main_content_stack.setCurrentIndex(5)
 
     # --- [UPDATED] LOAD ORDER DETAILS ---
+   # --- [UPDATED] LOAD ORDER DETAILS ---
     def load_order_details(self, order_id):
         self.current_viewing_order_id = order_id
         self.order_details_header.setText(f"Order Details #{order_id}")
@@ -1480,7 +2479,12 @@ class MainAdminWindow(QMainWindow):
         self.status_combo.setVisible(False)
         self.btn_save_status.setVisible(False)
         self.btn_cancel_status_edit.setVisible(False)
-        self.btn_edit_status.setVisible(True)
+        
+        # --- [EDITED] ---
+        # ลบ self.btn_edit_status.setVisible(True) จากตรงนี้
+        # เราจะไปกำหนดค่าที่ถูกต้องหลังจากดึง status ได้
+        # self.btn_edit_status.setVisible(True) 
+        # -------------------
 
         try:
             conn = sqlite3.connect(DB_PATH)
@@ -1511,6 +2515,26 @@ class MainAdminWindow(QMainWindow):
                 if index >= 0:
                     self.status_combo.setCurrentIndex(index)
 
+                # --- [NEW LOGIC START] ---
+                # ตรวจสอบสถานะเพื่อซ่อน/แสดงปุ่ม
+
+                # 1. ตรวจสอบปุ่ม Edit Status
+                if status == 'cancelled' or status == 'dispatched':
+                    # ถ้าเป็น 'cancelled' หรือ 'dispatched' ให้ซ่อนปุ่ม Edit
+                    self.btn_edit_status.setVisible(False)
+                else:
+                    # สถานะอื่น (pending, paid) ให้แสดงปุ่ม Edit
+                    self.btn_edit_status.setVisible(True)
+
+                # 2. ตรวจสอบปุ่ม Be Certified
+                # (ซ่อนถ้าจ่ายเงินแล้ว/ส่งของแล้ว/ยกเลิกแล้ว)
+                if status == 'paid' or status == 'dispatched' or status == 'cancelled':
+                    self.btn_be_certified.setVisible(False)
+                else:
+                    # สถานะอื่น (เช่น pending) ให้แสดง
+                    self.btn_be_certified.setVisible(True)
+                # --- [NEW LOGIC END] ---
+
                 # 2. ดึงข้อมูลลูกค้า
                 cursor.execute("""
                     SELECT first_name, last_name, phone, email, address 
@@ -1527,8 +2551,8 @@ class MainAdminWindow(QMainWindow):
                     self.cust_email_label.setText(email if email else "-")
                     self.cust_address_label.setText(address if address else "-")
                 else:
-                     for lbl in [self.cust_firstname_label, self.cust_lastname_label,
-                                 self.cust_tel_label, self.cust_email_label, self.cust_address_label]:
+                    for lbl in [self.cust_firstname_label, self.cust_lastname_label,
+                                self.cust_tel_label, self.cust_email_label, self.cust_address_label]:
                         lbl.setText("User not found")
 
             # 3. ดึงรายการสินค้า
@@ -1543,6 +2567,7 @@ class MainAdminWindow(QMainWindow):
 
             self.order_items_table.setRowCount(len(items))
             for i, (p_name, p_img, unit_price, quantity) in enumerate(items):
+                # (ส่วนการแสดงผล Item ในตาราง... เหมือนเดิม)
                 item_widget = QWidget()
                 item_layout = QHBoxLayout(item_widget)
                 item_layout.setContentsMargins(5, 5, 5, 5)
@@ -1592,10 +2617,10 @@ class MainAdminWindow(QMainWindow):
         self.btn_edit_status.setVisible(is_editing)
 
         if is_editing:
-             # คืนค่า ComboBox เป็นค่าเดิมถ้ายกเลิก
-             index = self.status_combo.findText(self.current_order_status, Qt.MatchFlag.MatchFixedString)
-             if index >= 0:
-                 self.status_combo.setCurrentIndex(index)
+            # คืนค่า ComboBox เป็นค่าเดิมถ้ายกเลิก
+            index = self.status_combo.findText(self.current_order_status, Qt.MatchFlag.MatchFixedString)
+            if index >= 0:
+                self.status_combo.setCurrentIndex(index)
 
     def handle_save_status(self):
         """บันทึกการเปลี่ยนแปลงสถานะพร้อมเงื่อนไขพิเศษ"""
@@ -1603,16 +2628,56 @@ class MainAdminWindow(QMainWindow):
         old_status = self.current_order_status
 
         if new_status == old_status:
-            self.toggle_status_edit_mode()
+            self.toggle_status_edit_mode() # ปิดโหมดแก้ไขถ้าไม่มีอะไรเปลี่ยนแปลง
             return
 
-        # เงื่อนไข: ห้ามเปลี่ยนเป็น dispatched ถ้ายังไม่มี payment_date
+        # --- [RULE 1: ตรวจสอบการเปลี่ยนเป็น "paid"] ---
+        if new_status == "paid":
+            if old_status == "dispatched":
+                pass # อนุญาต (dispatched -> paid)
+            else:
+                # [Block] ห้ามเปลี่ยนสถานะอื่นเป็น "paid" ด้วยตนเอง
+                QMessageBox.warning(self, "Invalid Action", 
+                                    "Cannot manually set status to 'paid'.\n"
+                                    "Please use the 'Be Certified' button to confirm payment.")
+                
+                index = self.status_combo.findText(old_status, Qt.MatchFlag.MatchFixedString)
+                if index >= 0:
+                    self.status_combo.setCurrentIndex(index)
+                return 
+
+        # --- [RULE 2: ตรวจสอบการเปลี่ยนเป็น "pending"] ---
+        if new_status == "pending":
+            
+            # --- [EDITED] ---
+            # [Block] ห้ามเปลี่ยนจาก "dispatched" หรือ "paid" กลับเป็น "pending"
+            if old_status == "dispatched" or old_status == "paid": 
+                
+                msg = ""
+                if old_status == "dispatched":
+                    msg = "Cannot change 'dispatched' status back to 'pending'."
+                elif old_status == "paid":
+                    msg = "Cannot change a 'paid' order back to 'pending'."
+
+                QMessageBox.warning(self, "Invalid Action", msg)
+                
+                index = self.status_combo.findText(old_status, Qt.MatchFlag.MatchFixedString)
+                if index >= 0:
+                    self.status_combo.setCurrentIndex(index)
+                return
+            # ------------------
+
+        # --- [RULE 3: ตรวจสอบการเปลี่ยนเป็น "dispatched"] ---
         if new_status == "dispatched" and not self.current_payment_date:
-            QMessageBox.warning(self, "Cannot Dispatch", "This order has not been paid yet (No payment date).")
+            QMessageBox.warning(self, "Cannot Dispatch", 
+                                "This order has not been paid yet (No payment date).")
+            
             index = self.status_combo.findText(old_status, Qt.MatchFlag.MatchFixedString)
-            self.status_combo.setCurrentIndex(index)
+            if index >= 0:
+                self.status_combo.setCurrentIndex(index)
             return
 
+        # --- ยืนยันการเปลี่ยนแปลง ---
         reply = QMessageBox.question(
             self, 'Confirm Status Change',
             f"Change status from '{old_status}' to '{new_status}'?\n(This action may affect stock or records)",
@@ -1626,7 +2691,9 @@ class MainAdminWindow(QMainWindow):
                 cursor = conn.cursor()
                 current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
-                # ถ้าเปลี่ยนเป็น cancelled ให้คืนสต็อกและบันทึกเวลา
+                # --- [DB LOGIC] ---
+
+                # (Logic คืนสต็อกเมื่อ Cancel - เหมือนเดิม)
                 if new_status == "cancelled" and old_status != "cancelled":
                     cursor.execute("""
                         UPDATE orders 
@@ -1634,16 +2701,23 @@ class MainAdminWindow(QMainWindow):
                         WHERE order_id = ?
                     """, (new_status, current_time, self.current_viewing_order_id))
 
-                    # คืนสต็อก
+                    # คืนสต็อก (Code เหมือนเดิม)
                     cursor.execute("SELECT product_id, quantity FROM order_items WHERE order_id = ?", (self.current_viewing_order_id,))
                     items_to_restore = cursor.fetchall()
                     for pid, qty in items_to_restore:
                         cursor.execute("UPDATE product SET stock = stock + ? WHERE id = ?", (qty, pid))
                     print(f"Restored stock for Order #{self.current_viewing_order_id}")
 
+                # --- [EDITED] ---
+                # (ลบ elif ที่เช็ค new_status == "pending" and old_status == "paid" ออกไป)
+                # ------------------
                 else:
-                    # เปลี่ยนสถานะปกติ
-                    cursor.execute("UPDATE orders SET status = ? WHERE order_id = ?", (new_status, self.current_viewing_order_id))
+                    # กรณีอื่นๆ ที่ผ่านการตรวจสอบมาแล้ว
+                    # (เช่น paid -> dispatched, dispatched -> paid)
+                    cursor.execute("UPDATE orders SET status = ? WHERE order_id = ?", 
+                                   (new_status, self.current_viewing_order_id))
+
+                # --- [END DB LOGIC] ---
 
                 conn.commit()
                 conn.close()
@@ -1658,12 +2732,11 @@ class MainAdminWindow(QMainWindow):
 
 
 
-
     def handle_view_slip_image_admin(self):
         # ฟังก์ชันสำหรับดูสลิป (เหมือนของ User แต่ปรับปรุงเล็กน้อย)
         if not hasattr(self, 'current_slip_path_admin') or not self.current_slip_path_admin:
-             QMessageBox.information(self, "No Slip", "คำสั่งซื้อนี้ไม่มีการแนบรูปภาพสลิป")
-             return
+            QMessageBox.information(self, "No Slip", "คำสั่งซื้อนี้ไม่มีการแนบรูปภาพสลิป")
+            return
 
         image_path = self.current_slip_path_admin
         if os.path.exists(image_path):
@@ -1675,9 +2748,9 @@ class MainAdminWindow(QMainWindow):
                 subprocess.call([opener, image_path])
         else:
             QMessageBox.warning(self, "File Not Found", f"ไม่พบไฟล์รูปภาพที่:\n{image_path}")
-    
-    
-    
+        
+        
+        
     
     def create_profile_page(self):
         profile_frame = QFrame()
@@ -1708,7 +2781,7 @@ class MainAdminWindow(QMainWindow):
             self.upload_button.setIcon(upload_icon)
             self.upload_button.setIconSize(QSize(40, 40))
         except:
-             print("คำเตือน: ไม่พบไอคอนอัปโหลด 'src/img/icon/upload.png'")
+            print("คำเตือน: ไม่พบไอคอนอัปโหลด 'src/img/icon/upload.png'")
             
         self.upload_button.setObjectName("uploadButton") 
         self.upload_button.setFixedHeight(40)
@@ -1962,8 +3035,8 @@ class MainAdminWindow(QMainWindow):
 
     def handle_logout(self):
         reply = QMessageBox.question(self, 'Logout', 'Are you sure you want to logout?',
-                                     QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
-                                     QMessageBox.StandardButton.No)
+                                      QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+                                      QMessageBox.StandardButton.No)
         if reply == QMessageBox.StandardButton.Yes:
             self.logout_requested.emit()
             self.close()
@@ -2064,7 +3137,7 @@ class MainAdminWindow(QMainWindow):
             self.show_browse_page()
 
         except sqlite3.IntegrityError:
-             QMessageBox.warning(self, "Database Error", "An error occurred (IntegrityError). This ISBN (ID) might already exist.")
+            QMessageBox.warning(self, "Database Error", "An error occurred (IntegrityError). This ISBN (ID) might already exist.")
         except Exception as e:
             print(f"เกิดข้อผิดพลาดในการบันทึก comic: {e}")
             QMessageBox.warning(self, "Error", f"Could not save new comic: {e}")

@@ -730,6 +730,125 @@ QSpinBox::up-button:pressed, QSpinBox::down-button:pressed {
 
 
 
+/* Frame สีครีมตรงกลาง */
+QFrame#salesReportFrame {
+background-color: #d7d1b4; /* สีครีม (ปรับตามชอบ) */
+    border: 1px solid #CCCCCC;
+    border-radius: 8px;
+    max-width: 800px; /* จำกัดความกว้างสูงสุด */
+}
+
+/* หัวข้อ "Daily Sales" */
+QLabel#salesReportTitle {
+    font-size: 24px;
+    font-weight: bold;
+    color: #000000;
+    padding-bottom: 10px;
+    border-bottom: 2px solid #EEE;
+}
+
+/* ข้อความ "Total Amount :" */
+QLabel#salesReportHeader {
+    font-size: 16px;
+    font-weight: bold;
+    color: #000000;
+}
+
+/* Label ค่าตัวเลข (เช่น "orders:", "quantity:") */
+QLabel#salesReportValue {
+    font-size: 16px;
+    color: #000000;
+    padding-left: 20px; /* ย่อหน้าเล็กน้อย */
+}
+
+QLabel#salesReportLabelText {
+    color: black; /* หรือใช้ #000000 */
+    /* ถ้าคุณต้องการเปลี่ยนขนาดตัวอักษรด้วย ก็เพิ่มได้ที่นี่ */
+    /* font-size: 14pt; */ 
+}
+
+QLabel#salesDateLabel {
+    font-size: 16px;
+    color: #000000;
+    padding-left: 20px; /* ย่อหน้าเล็กน้อย */
+}
+
+
+QComboBox#salesDateInput {
+    background-color: white;  /* [ตามคำขอ] พื้นหลังสีขาว */
+    color: black;             /* [ตามคำขอ] ฟอนต์สีดำ */
+    border: 1px solid #b0b0b0; /* ขอบสีเทาอ่อน (เหมือน QLineEdit) */
+    padding: 5px;
+    padding-left: 10px; /* เว้นช่องว่างด้านซ้ายให้ตัวอักษร */
+    border-radius: 4px;
+}
+
+QComboBox#salesDateInput QAbstractItemView {
+    background-color: white;     /* [ตามคำขอ] พื้นหลังลิสต์สีขาว */
+    color: black;                /* [ตามคำขอ] ฟอนต์ในลิสต์สีดำ */
+    border: 1px solid #c0c0c0;   /* เพิ่มขอบสีเทาให้ดูชัดเจน (แนะนำ) */
+}
+
+QComboBox#salesDateInput QAbstractItemView::item:hover {
+    background-color: #f0f0f0;
+    color: black; /* ฟอนต์ยังเป็นสีดำ */
+}
+
+
+/* Label ข้อความ "Total :" */
+QLabel#salesReportTotalLabel {
+    font-size: 18px;
+    font-weight: bold;
+    color: #111;
+}
+
+/* Label ค่าตัวเลข "Total : ... THB" */
+QLabel#salesReportTotalValue {
+    font-size: 20px;
+    font-weight: bold;
+    color: #000000; /* สีแดง (ปรับตามชอบ) */
+}
+
+/* ช่องกรอกวันที่ */
+QLineEdit#salesDateInput {
+    font-size: 14px;
+    padding: 5px 8px;
+    border: 1px solid #AAA;
+    border-radius: 4px;
+    background-color: white;
+    color: black;
+}
+
+/* ปุ่ม Apply */
+QPushButton#salesApplyButton {
+    background-color: #5CB85C; /* สีเขียว */
+    color: white;
+    font-weight: bold;
+    border: none;
+    border-radius: 4px;
+    padding: 8px 10px;
+}
+
+QPushButton#salesApplyButton:hover {
+    background-color: #4A994A;
+}
+
+
+
+
+
+
+
+
+
+
+
+
+/* ทำให้ชื่อสินค้าในตาราง (Bestseller และ Order Details) เป็นสีขาว */
+QLabel#bestsellerItemName {
+    color: white;
+    font-size: 14px; /* <--- ผมเพิ่มขนาดให้หน่อย จะได้อ่านง่ายขึ้น */
+}
 
 
 

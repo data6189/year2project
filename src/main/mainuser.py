@@ -2158,9 +2158,9 @@ class MainUserWindow(QMainWindow):
             c.drawRightString(right_x - 40 * mm, y_footer - 19 * mm, "VAT 7% :")
             c.drawRightString(right_x, y_footer - 19 * mm, f"{order_info['vat']:,.2f} THB")
 
-            c.line(width - 80 * mm, y_footer - 24 * mm, width - 20 * mm, y_footer - 24 * mm)
+            c.line(width - 100 * mm, y_footer - 24 * mm, width - 20 * mm, y_footer - 24 * mm)
             c.setFont("Helvetica", 16)
-            c.drawRightString(right_x - 40 * mm, y_footer - 32 * mm, "Total :")
+            c.drawRightString(right_x - 50 * mm, y_footer - 32 * mm, "Total :")
             c.drawRightString(right_x, y_footer - 32 * mm, f"{order_info['total']:,.2f} THB")
 
             c.setFont("Helvetica", 20)
