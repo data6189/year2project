@@ -833,7 +833,15 @@ QPushButton#salesApplyButton:hover {
     background-color: #4A994A;
 }
 
-
+QPushButton#salesViewOrdersButton {
+	background-color: #3498db; /* สีฟ้า */
+	color: white;
+	border-radius: 5px;
+	font-weight: bold;
+}
+QPushButton#salesViewOrdersButton:hover {
+	background-color: #2980b9;
+}
 
 
 

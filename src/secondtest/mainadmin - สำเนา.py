@@ -1984,6 +1984,14 @@ class MainAdminWindow(QMainWindow):
             conn = sqlite3.connect(DB_PATH)
             cursor = conn.cursor()
 
+            # ถ้ามีการเปลี่ยน ID ต้องเช็คก่อนว่า ID ใหม่ซ้ำไหม
+            if new_id != self.current_detail_product_id:
+                cursor.execute("SELECT 1 FROM product WHERE id = ?", (new_id,))
+                if cursor.fetchone():
+                    QMessageBox.warning(self, "Duplicate ID", f"Product ID {new_id} already exists. Please use a unique ID.")
+                    conn.close()
+                    return
+
             # อัปเดตข้อมูล (รวมถึง ID)
             cursor.execute("""
                 UPDATE product 
